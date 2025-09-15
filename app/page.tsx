@@ -36,7 +36,6 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const result = await signInWithPopup(auth, provider);
-      console.log("User:", result.user);
       router.push("/main");
     } catch (error) {
       console.error("Login failed:", error);
