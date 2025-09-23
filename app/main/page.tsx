@@ -5,6 +5,8 @@ import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { app } from "@lib/firebaseConfig";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button"
+
 const auth = getAuth(app);
 
 export default function MainLoggedInPage() {
@@ -44,12 +46,7 @@ export default function MainLoggedInPage() {
 					<h1 className="text-xl text-gray-600 dark:text-gray-300">Loading...</h1>
 				)}
 			</div>
-			<button
-				onClick={handleLogout}
-				className="px-6 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
-			>
-				Log out
-			</button>
+			<Button onClick={handleLogout} variant="destructive">Log out</Button>
 		</div>
 	);
 }
