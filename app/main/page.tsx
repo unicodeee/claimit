@@ -5,7 +5,11 @@ import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { app } from "@lib/firebaseConfig";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+import {addDoc, collection, limit, onSnapshot, orderBy, query, Timestamp} from "firebase/firestore"
+import db from "@lib/firestore";
+
+import { Search } from "lucide-react";
 
 const auth = getAuth(app);
 
@@ -21,6 +25,18 @@ export default function MainLoggedInPage() {
 				setUserName(null);
 			}
 		});
+
+		const fetchLostItems = async () => {
+			try {
+				const itemsRef = collection(db, "items");
+				const q = query(itemsRef, orderBy("createdAt", "desc"), limit(50));
+
+			}
+			catch (e) {
+				console.error(e);
+			}
+		}
+		fetchLostItems();
 
 		return () => unsubscribe();
 	}, []);
