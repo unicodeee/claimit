@@ -1,8 +1,8 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Search } from "lucide-react"
-import {IconButton} from "@/components/ui/icon-button";
 import {Footer} from "@/components/footer";
 
 const geistSans = Geist({
