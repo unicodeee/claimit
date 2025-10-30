@@ -19,7 +19,7 @@ export function Footer() {
 
             <div className="text-center">
                 <p className="text-gray-600 dark:text-gray-300">
-                    © 2024 ClaimIt. Helping reunite lost items with their owners.
+                    © 2025 ClaimIt. Helping reunite lost items with their owners.
                 </p>
             </div>
         </footer>
