@@ -56,9 +56,7 @@ export default function BrowseItemsPage() {
 	return (
 		<div className="text-2xl font-bold mb-2">
 			<Card className="w-full">
-				<CardHeader>
-					<Badge variant="destructive">Badge</Badge>
-				</CardHeader>
+				
 				<CardContent>
 					<div className="flex gap-20">
 						{items.map((item) => (
@@ -67,9 +65,10 @@ export default function BrowseItemsPage() {
 
 								<ItemCard
 									key={item.id}
-									title={item.description}
+									title={item.itemName}
 									dateFound={item.dateFound}
 									location={item.location}
+									description={item.description}
 									// imgUrl={item.images?.[0] ?? "/hero-people.png"} // TO DO
 									imgUrl={"/hero-people.png"}
 									keywords={item.keywords}

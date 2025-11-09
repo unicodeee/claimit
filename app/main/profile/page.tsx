@@ -1,66 +1,28 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { app } from "@lib/firebaseConfig";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {useEffect, useState} from "react";
+import {getAuth, onAuthStateChanged, signOut} from "firebase/auth";
+import {useRouter} from "next/navigation";
+import {app} from "@lib/firebaseConfig";
+import {Button} from "@/components/ui/button";
 
 
-
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
- 
-
+import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form"
+import {Input} from "@/components/ui/input"
+import {zodResolver} from "@hookform/resolvers/zod"
+import {useForm} from "react-hook-form"
+import {z} from "zod"
 
 
 const auth = getAuth(app);
 
 
-
- 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
- 
 const formSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
   }),
 })
-
-export const itemSchema = z.object({
-  id: z.string(),
-  campusId: z.string().optional(),
-  category: z.string().optional(),
-  claimCount: z.number().default(0).optional(),
-  createdAt: z.union([z.date(), z.string()]).optional(),   // Firestore Timestamp or string
-  description: z.string().optional(),
-  images: z.array(z.string()).optional(),
-  isFlagged: z.boolean().default(false).optional(),
-  keywords: z.array(z.string()).optional(),
-  dateFound: z.union([z.date(), z.string()]).optional(),
-  lastActivityAt: z.union([z.date(), z.string()]).optional(),
-  location: z.string().optional(),
-  ownerUid: z.string().optional(),
-  status: z.enum(["open", "claimed", "closed"]).default("open").optional(),
-  tags: z.array(z.string()).optional(),
-  title: z.string().optional(),
-  type: z.enum(["lost", "found"]).optional(),
-  viewCount: z.number().default(0).optional(),
-});
- 
-
 
 
 export default function MainDashboard() {

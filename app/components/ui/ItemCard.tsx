@@ -11,13 +11,13 @@ import { Item } from "@/lib/validators/itemSchema";
 import { MapPin } from 'lucide-react';
 
 
-type Props = Pick<Item, "title" | "dateFound" | "location" | "keywords"> & {
+type Props = Pick<Item, "title" | "dateFound" | "location" | "keywords" | "description"> & {
     imgUrl?: string;
     onContactFinder?: () => void;
 };
 
 
-export function ItemCard({ title, dateFound, location, imgUrl, keywords, onContactFinder }: Props) {
+export function ItemCard({ title, description, dateFound, location, imgUrl, keywords, onContactFinder }: Props) {
     const created = typeof dateFound === "string" ? new Date(dateFound) : dateFound;
     return (
         <Card className="rounded-2xl shadow-sm">
@@ -56,7 +56,12 @@ export function ItemCard({ title, dateFound, location, imgUrl, keywords, onConta
                     >
                         {location}
                     </Button>
+
+
                 </div>
+                {/*<Badge variant="destructive">{ description }</Badge>*/}
+
+                <p>{description}</p>
 
 
 

@@ -1,31 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from "@lib/firebaseConfig";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {addDoc, collection, getFirestore, Timestamp} from "firebase/firestore";
+import {getDownloadURL, getStorage, ref, uploadBytes} from "firebase/storage";
+import {app} from "@lib/firebaseConfig";
 
-import { Button } from "@/components/ui/button";
-import {
-    Form,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormControl,
-    FormMessage,
-    FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ChevronDownIcon } from "lucide-react";
+import {useAuth} from "@/lib/auth-context";
+
+
+import {Button} from "@/components/ui/button";
+import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Calendar} from "@/components/ui/calendar";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {CalendarIcon} from "lucide-react";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -34,11 +28,11 @@ const formSchema = z.object({
     itemName: z.string().min(2, "Item name must be at least 2 characters."),
     category: z.string().min(1, "Please select a category."),
     description: z.string().min(10, "Please provide a detailed description."),
-    dateLost: z.date({ required_error: "Please pick a date." }),
+    dateLost: z.date("Please pick a date."),
     timeLost: z.string().optional(),
     location: z.string().min(2, "Please enter a valid location."),
     name: z.string().min(2, "Please enter your full name."),
-    email: z.string().email("Invalid email address."),
+    email: z.email("Invalid email address."),
     phone: z.string().optional(),
     photos: z.any().optional(),
 });
@@ -46,6 +40,7 @@ const formSchema = z.object({
 export default function ReportLostPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const { uid } = useAuth();
     const [openDate, setOpenDate] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -71,7 +66,7 @@ export default function ReportLostPage() {
 
             if (fileList && fileList.length > 0) {
                 for (const file of Array.from(fileList)) {
-                    const storageRef = ref(storage, `lostItems/${file.name}-${Date.now()}`);
+                    const storageRef = ref(storage, `items/${file.name}-${Date.now()}`);
                     await uploadBytes(storageRef, file);
                     const url = await getDownloadURL(storageRef);
                     photoURLs.push(url);
@@ -83,6 +78,7 @@ export default function ReportLostPage() {
             await addDoc(collection(db, "items"), {
                 ...cleanData,
                 dateLost: Timestamp.fromDate(values.dateLost),
+                ownerUid: uid, // ID of this account who submit lost item
                 photoURLs,
                 createdAt: Timestamp.now(),
             });

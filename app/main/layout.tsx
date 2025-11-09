@@ -1,13 +1,12 @@
 "use client"
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { app } from "@lib/firebaseConfig";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { NavigationAppMenu } from "@/components/nav";
+import {useEffect, useState} from "react";
+import {getAuth, onAuthStateChanged, signOut} from "firebase/auth";
+import {useRouter} from "next/navigation";
+import {app} from "@lib/firebaseConfig";
+import {Button} from "@/components/ui/button";
+import {NavigationAppMenu} from "@/components/nav";
+import {AuthProvider} from "@/lib/auth-context";
 
 const auth = getAuth(app);
 
@@ -61,7 +60,7 @@ export default function MainLayout({
                 </div>
             </header>
             <main className="flex-grow">
-                {children}
+                <AuthProvider>{children}</AuthProvider>
             </main>
         </>
     );

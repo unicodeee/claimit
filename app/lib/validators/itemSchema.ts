@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const itemSchema = z.object({
   id: z.string(),
+  itemName: z.string().optional(),
   campusId: z.string().optional(),
   category: z.string().optional(),
   claimCount: z.number().default(0).optional(),

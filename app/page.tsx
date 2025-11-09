@@ -21,23 +21,22 @@ export default function LoginPage() {
     const router = useRouter();
 
 // TODO
-    // useEffect(() => {
-    //     // ✅ Check if user is already signed in
-    //     const unsubscribe = onAuthStateChanged(auth, (user) => {
-    //         if (user) {
-    //             router.replace("/main"); // use replace so login page isn’t in browser history
-    //         }
-    //     });
+    useEffect(() => {
+        // ✅ Check if user is already signed in
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                router.replace("/main"); // use replace so login page isn’t in browser history
+            }
+        });
 
-    //     return () => unsubscribe();
-    // }, [router]);
+        return () => unsubscribe();
+    }, [router]);
 
 
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
             const result = await signInWithPopup(auth, provider);
-            console.log("User:", result.user);
             router.push("/main");
         } catch (error) {
             console.error("Login failed:", error);
