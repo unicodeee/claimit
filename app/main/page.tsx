@@ -47,14 +47,14 @@ export default function MainDashboard() {
           <div className="flex gap-4 mt-6">
             <Button
               className="bg-white text-blue-700 font-semibold hover:bg-gray-100"
-              onClick={() => router.push("/report-lost")}
+              onClick={() => router.push("/main/report-lost")}
             >
               Report Lost Item
             </Button>
             <Button
               variant="secondary"
               className="bg-transparent border border-white hover:bg-white hover:text-blue-700"
-              onClick={() => router.push("/browse")}
+              onClick={() => router.push("/main/browse")}
             >
               Browse Found Items
             </Button>
@@ -82,7 +82,7 @@ export default function MainDashboard() {
               <Button
                 variant="destructive"
                 className="w-full"
-                onClick={() => router.push("/report-lost")}
+                onClick={() => router.push("/main/report-lost")}
               >
                 Report Lost
               </Button>
@@ -96,7 +96,7 @@ export default function MainDashboard() {
               <Button
                 variant="default"
                 className="bg-green-600 hover:bg-green-700 w-full"
-                onClick={() => router.push("/report-found")}
+                onClick={() => router.push("/main/report-found")}
               >
                 Report Found
               </Button>
@@ -110,7 +110,7 @@ export default function MainDashboard() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => router.push("/browse")}
+                onClick={() => router.push("/main/browse")}
               >
                 Start Browsing
               </Button>

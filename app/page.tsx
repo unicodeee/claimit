@@ -9,7 +9,7 @@ import {app} from "@lib/firebaseConfig";
 import {Button} from "@/components/ui/button";
 import {IconButton} from "@/components/ui/icon-button";
 
-import {CardLandingPage} from "@/components/landingpage-card";
+import {CardLandingGroup} from "@/components/landingpage-card";
 import {TextEverythingYouNeed} from "@/components/everything-you-need";
 
 const provider = new GoogleAuthProvider();
@@ -20,17 +20,17 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+// TODO
+    // useEffect(() => {
+    //     // ✅ Check if user is already signed in
+    //     const unsubscribe = onAuthStateChanged(auth, (user) => {
+    //         if (user) {
+    //             router.replace("/main"); // use replace so login page isn’t in browser history
+    //         }
+    //     });
 
-    useEffect(() => {
-        // ✅ Check if user is already signed in
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                router.replace("/main"); // use replace so login page isn’t in browser history
-            }
-        });
-
-        return () => unsubscribe();
-    }, [router]);
+    //     return () => unsubscribe();
+    // }, [router]);
 
 
     const handleGoogleLogin = async () => {
@@ -95,7 +95,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col justify-center items-center gap-6 pt-6 pb-6">
-                <CardLandingPage />
+                <CardLandingGroup />
             </div>
 
 

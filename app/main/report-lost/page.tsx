@@ -1,236 +1,355 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { app } from "@lib/firebaseConfig";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Button } from "@/components/ui/button";
-import {IconButton} from "@/components/ui/icon-button";
+import { app } from "@lib/firebaseConfig";
 
+import { Button } from "@/components/ui/button";
+import {
+    Form,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormControl,
+    FormMessage,
+    FormDescription,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, ChevronDownIcon } from "lucide-react";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+const formSchema = z.object({
+    itemName: z.string().min(2, "Item name must be at least 2 characters."),
+    category: z.string().min(1, "Please select a category."),
+    description: z.string().min(10, "Please provide a detailed description."),
+    dateLost: z.date({ required_error: "Please pick a date." }),
+    timeLost: z.string().optional(),
+    location: z.string().min(2, "Please enter a valid location."),
+    name: z.string().min(2, "Please enter your full name."),
+    email: z.string().email("Invalid email address."),
+    phone: z.string().optional(),
+    photos: z.any().optional(),
+});
+
 export default function ReportLostPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [openDate, setOpenDate] = useState(false);
 
-  const [itemName, setItemName] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [dateLost, setDateLost] = useState("");
-  const [timeLost, setTimeLost] = useState("");
-  const [location, setLocation] = useState("");
-  const [photos, setPhotos] = useState<FileList | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            itemName: "",
+            category: "",
+            description: "",
+            location: "",
+            name: "",
+            email: "",
+            phone: "",
+            dateLost: new Date(),
+            timeLost: new Date().toTimeString().slice(0, 5),
+        },
+    });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        setLoading(true);
+        try {
+            const fileList = values.photos as FileList | null;
+            const photoURLs: string[] = [];
 
-    try {
-      // Step 1️: upload photos to Firebase Storage
-      const photoURLs: string[] = [];
+            if (fileList && fileList.length > 0) {
+                for (const file of Array.from(fileList)) {
+                    const storageRef = ref(storage, `lostItems/${file.name}-${Date.now()}`);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+                    photoURLs.push(url);
+                }
+            }
 
-      if (photos && photos.length > 0) {
-        for (const file of Array.from(photos)) {
-          const storageRef = ref(storage, `lostItems/${file.name}-${Date.now()}`);
-          await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(storageRef);
-          photoURLs.push(url);
+            const { photos, ...cleanData } = values;
+
+            await addDoc(collection(db, "items"), {
+                ...cleanData,
+                dateLost: Timestamp.fromDate(values.dateLost),
+                photoURLs,
+                createdAt: Timestamp.now(),
+            });
+
+            alert("Lost item successfully submitted!");
+            router.push("/main");
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert("Failed to submit item. Please try again.");
+        } finally {
+            setLoading(false);
         }
-      }
+    };
 
-      // Step 2️: save item data to Firestore
-      const itemData = {
-        itemName,
-        category,
-        description,
-        dateLost,
-        timeLost,
-        location,
-        contactName: name,
-        email,
-        phone,
-        photoURLs,
-        createdAt: Timestamp.now(),
-      };
+    return (
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Page Header */}
+            <section className="px-10 py-10 text-center">
+                <h2 className="text-2xl font-semibold mb-2">
+                    Help reunite lost items with their owners or find what you’ve lost
+                </h2>
+                <div className="flex justify-center gap-4 mt-4">
+                    <Button className="bg-blue-600 text-white">Lost Item</Button>
+                    <Button variant="outline" onClick={() => router.push("/report-found")}>
+                        Found Item
+                    </Button>
+                </div>
+            </section>
 
-      await addDoc(collection(db, "items"), itemData);
+            {/* Main Form */}
+            <main className="flex flex-col md:flex-row gap-8 px-10 pb-16">
+                <Form {...form}>
+                    <form
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        className="flex-1 bg-white p-8 rounded-xl shadow-sm space-y-8"
+                    >
+                        <h3 className="text-lg font-semibold mb-4">Item Details</h3>
 
-      alert("Lost item successfully submitted!");
-      router.push("/main");
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("Failed to submit item. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+                        {/* Item Name */}
+                        <FormField
+                            control={form.control}
+                            name="itemName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Item Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., iPhone 13 Pro" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+                        {/* Category */}
+                        <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Category</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select category" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Electronics">Electronics</SelectItem>
+                                            <SelectItem value="Clothing">Clothing</SelectItem>
+                                            <SelectItem value="Accessories">Accessories</SelectItem>
+                                            <SelectItem value="Documents">Documents</SelectItem>
+                                            <SelectItem value="Unknown">Unknown</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-      {/* Page Header */}
-      <section className="px-10 py-10 text-center">
-        <h2 className="text-2xl font-semibold mb-2">
-          Help reunite lost items with their owners or find what you’ve lost
-        </h2>
-        <div className="flex justify-center gap-4 mt-4">
-          <Button className="bg-blue-600 text-white">Lost Item</Button>
-          <Button variant="outline" onClick={() => router.push("/report-found")}>
-            Found Item
-          </Button>
+                        {/* Description */}
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder="Describe your lost item..."
+                                            rows={4}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Include any identifying marks or details.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Date and Time Pickers */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Date Picker */}
+                            <FormField
+                                control={form.control}
+                                name="dateLost"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Date Lost</FormLabel>
+                                        <Popover open={openDate} onOpenChange={setOpenDate}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    className="justify-between w-full font-normal"
+                                                >
+                                                    {field.value
+                                                        ? field.value.toLocaleDateString("en-US", {
+                                                            day: "2-digit",
+                                                            month: "long",
+                                                            year: "numeric",
+                                                        })
+                                                        : "Select date"}
+                                                    <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                align="start"
+                                                className="w-auto p-0"
+                                            >
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={(date) => {
+                                                        field.onChange(date);
+                                                        setOpenDate(false);
+                                                    }}
+                                                    captionLayout="dropdown"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Time Picker */}
+                            <FormField
+                                control={form.control}
+                                name="timeLost"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Time Lost</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="time"
+                                                step="1"
+                                                {...field}
+                                                className="bg-background"
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Location */}
+                            <FormField
+                                control={form.control}
+                                name="location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Location</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., Central Park, Library" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {/* Photos */}
+                        <FormField
+                            control={form.control}
+                            name="photos"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Photos</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => field.onChange(e.target.files)}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Upload clear, high-quality images of your lost item.
+                                    </FormDescription>
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Contact Info */}
+                        <h3 className="text-lg font-semibold mb-4 mt-6">Contact Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="your.email@sjsu.edu" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone (optional)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="(555) 123-4567" {...field} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <Button type="submit" disabled={loading} className="w-full bg-blue-600 text-white">
+                            {loading ? "Uploading..." : "Report Lost Item"}
+                        </Button>
+                    </form>
+                </Form>
+
+                {/* Tips Sidebar */}
+                <aside className="w-full md:w-80">
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
+                        <ul className="space-y-3 text-sm text-gray-600">
+                            <li>Be specific in your description.</li>
+                            <li>Include unique identifiers or marks.</li>
+                            <li>Upload clear, well-lit photos.</li>
+                            <li>Provide an accurate location and date.</li>
+                            <li>Check back regularly for matches.</li>
+                        </ul>
+                    </div>
+                </aside>
+            </main>
         </div>
-      </section>
-
-      {/* Main Form Section */}
-      <main className="flex flex-col md:flex-row gap-8 px-10 pb-16">
-        <form onSubmit={handleSubmit} className="flex-1 bg-white p-8 rounded-xl shadow-sm space-y-8">
-          {/* Item Details */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">Item Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="e.g., iPhone 13 Pro"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                className="border rounded-md p-2 w-full"
-                required
-              />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="border rounded-md p-2 w-full"
-                required
-              >
-                <option value="">Select category</option>
-                <option>Electronics</option>
-                <option>Clothing</option>
-                <option>Accessories</option>
-                <option>Documents</option>
-              </select>
-            </div>
-            <textarea
-              placeholder="Describe your lost item in detail..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="border rounded-md p-2 w-full mt-4"
-              rows={3}
-              required
-            />
-          </div>
-
-          {/* When & Where */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">When & Where</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="date"
-                value={dateLost}
-                onChange={(e) => setDateLost(e.target.value)}
-                className="border rounded-md p-2"
-                required
-              />
-              <input
-                type="time"
-                value={timeLost}
-                onChange={(e) => setTimeLost(e.target.value)}
-                className="border rounded-md p-2"
-              />
-              <input
-                type="text"
-                placeholder="e.g., Central Park, Library"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="border rounded-md p-2"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Photos */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">Photos</h3>
-            <div className="border-2 border-dashed rounded-lg p-6 text-center text-gray-500">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => setPhotos(e.target.files)}
-                className="hidden"
-                id="fileUpload"
-              />
-              <label htmlFor="fileUpload" className="cursor-pointer">
-                <p>Upload photos of your lost item</p>
-                <Button variant="outline" className="mt-3">Choose Files</Button>
-              </label>
-            </div>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">📞 Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border rounded-md p-2"
-                required
-              />
-              <input
-                type="email"
-                placeholder="your.email@sjsu.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border rounded-md p-2"
-                required
-              />
-              <input
-                type="tel"
-                placeholder="(555) 123-4567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="border rounded-md p-2"
-              />
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white mt-4 w-full hover:bg-blue-700"
-          >
-            {loading ? "Uploading..." : " Report Lost Item"}
-          </Button>
-        </form>
-
-        {/* Tips Sidebar */}
-        <aside className="w-full md:w-80">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li> Be as specific as possible in your description.</li>
-              <li> Include unique features or markings.</li>
-              <li> Upload clear, high-quality photos.</li>
-              <li> Provide accurate location details.</li>
-              <li> Check back regularly for matches.</li>
-            </ul>
-          </div>
-        </aside>
-      </main>
-
-      {/* Footer
-      <footer className="bg-white border-t py-6 text-center text-sm text-gray-600">
-        © 2025 ClaimIt. Helping reunite lost items with their owners.
-      </footer> */}
-    </div>
-  );
+    );
 }
