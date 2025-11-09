@@ -52,7 +52,7 @@ export function NavigationAppMenu() {
 
                 {components.map((component) => {
                     return (
-                        <NavigationMenuItem>
+                        <NavigationMenuItem key={component.title}>
                             <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                                 <Link href={component.href}>{component.title}</Link>
                             </NavigationMenuLink>

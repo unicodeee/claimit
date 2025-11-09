@@ -68,7 +68,7 @@ const instructionsCards: CardItem[] = [
 
 ]
 
-export function CardLandingPage() {
+export function CardLandingGroup() {
     return (
 
         <div className="flex flex-col justify-center items-center gap-6">

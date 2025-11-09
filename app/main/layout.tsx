@@ -41,8 +41,7 @@ export default function MainLayout({
 
 
     return (
-        <html lang="en">
-
+        <>
             <header className="flex items-center justify-between px-10 py-4 bg-white shadow-sm border-b">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-gray-800">ClaimIt</h1>
@@ -64,7 +63,6 @@ export default function MainLayout({
             <main className="flex-grow">
                 {children}
             </main>
-
-        </html>
+        </>
     );
 }

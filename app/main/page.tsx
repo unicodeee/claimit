@@ -33,7 +33,7 @@ export default function MainDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-
+      
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-[#2563EB] via-[#9333EA] to-[#4338CA] text-white py-14 px-10 flex flex-col md:flex-row items-center justify-between">
         <div className="max-w-xl space-y-4">
@@ -145,8 +145,9 @@ export default function MainDashboard() {
               />
               <CardContent className="p-4 space-y-2">
                 <span
-                  className={`px-2 py-1 text-xs font-semibold text-white rounded ${item.color === "red" ? "bg-red-500" : "bg-green-500"
-                    }`}
+                  className={`px-2 py-1 text-xs font-semibold text-white rounded ${
+                    item.color === "red" ? "bg-red-500" : "bg-green-500"
+                  }`}
                 >
                   {item.label}
                 </span>
@@ -154,10 +155,11 @@ export default function MainDashboard() {
                 <p className="text-sm text-gray-500">{item.days}</p>
                 <p className="text-sm text-gray-500">{item.place}</p>
                 <Button
-                  className={`w-full mt-2 ${item.color === "red"
+                  className={`w-full mt-2 ${
+                    item.color === "red"
                       ? "bg-blue-600 hover:bg-blue-700"
                       : "bg-green-600 hover:bg-green-700"
-                    }`}
+                  }`}
                 >
                   {item.button}
                 </Button>

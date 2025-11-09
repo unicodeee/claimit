@@ -6,6 +6,8 @@ import { Item } from "@/lib/validators/itemSchema";
 import { getItems } from "@/lib/utils";
 import { NavigationAppMenu } from "@/components/nav";
 
+import { z } from "zod";
+
 import {
 	Card,
 	CardAction,
@@ -16,61 +18,78 @@ import {
 	CardTitle,
 } from "@/components/ui/card"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+import { ItemCard } from "@/components/ui/ItemCard";
+
+import { onSnapshot, query, collection, orderBy } from "firebase/firestore";
+import db from "@/lib/firestore";
 
 export default function BrowseItemsPage() {
 
 	const [items, setItems] = useState<Item[]>([]);
 
+	// // useEffect(() => {
+	// // 	const fetchItems = async () => {
+	// // 		const items = await getItems();
+	// // 		console.log("Fetched items:", items); // ✅ Log here
+	// // 		setItems(items);
+	// // 	}
+	// // 	fetchItems();
+	// // }, []);
+
+
+
+
+
 	useEffect(() => {
-		const fetchItems = async () => {
-			const items = await getItems();
+		const q = query(collection(db, "items"), orderBy("createdAt", "desc"));
+		const unsubscribe = onSnapshot(q, (snapshot) => {
+			const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 			setItems(items);
-		}
-		fetchItems();
+		});
+		return unsubscribe; // cleanup
 	}, []);
 
+	const onContactFinder = () => { };
 
 
 	return (
-
-		<div>
-			<NavigationAppMenu />
-			
-			<h1>Lost & Found Items</h1>
-			<p>xxx Items found</p>
-
-
-
-
-			<Card className="w-full max-w-sm">
+		<div className="text-2xl font-bold mb-2">
+			<Card className="w-full">
 				<CardHeader>
 					<Badge variant="destructive">Badge</Badge>
-					{/* <CardTitle>Card Title</CardTitle>
-					<CardDescription>Card Description</CardDescription>
-					<CardAction>Card Action</CardAction> */}
 				</CardHeader>
 				<CardContent>
+					<div className="flex gap-20">
+						{items.map((item) => (
+
+							<div>
+
+								<ItemCard
+									key={item.id}
+									title={item.description}
+									dateFound={item.dateFound}
+									location={item.location}
+									// imgUrl={item.images?.[0] ?? "/hero-people.png"} // TO DO
+									imgUrl={"/hero-people.png"}
+									keywords={item.keywords}
+
+									onContactFinder={onContactFinder} />
 
 
-					<Image
-						src="/hero-people.png"
-						alt="Community illustration"
-						width={350}
-						height={250}
-						className="rounded-xl mt-10 md:mt-0 shadow-2xl"
-					/>
-					{/* <p>Card Content</p> */}
+								
+
+
+							</div>
+
+						))}
+
+
+					</div>
 				</CardContent>
 				<CardFooter>
-					<div className="flex flex-col gap-2">
-						{items.map((item) => (
-							<div key={item.id}>
-								<h2>{item.title}</h2>
-								<p>{item.description}</p>
-							</div>
-						))}
-					</div>
+
+
 				</CardFooter>
 			</Card>
 		</div>
