@@ -12,21 +12,28 @@ import { MapPin } from 'lucide-react';
 import {AspectRatio} from "@radix-ui/react-aspect-ratio";
 
 
-type Props = Pick<Item, "title" | "dateFound" | "location" | "keywords" | "description"> & {
+type Props = Pick<Item, "title" | "dateFound" | "location" | "keywords" | "description" | "type"> & {
     imgUrl?: string;
     onContactFinder?: () => void;
 };
 
 
-export function ItemCard({ title, description, dateFound, location, imgUrl, keywords, onContactFinder }: Props) {
+export function ItemCard({ title, description, dateFound, type, location, imgUrl, keywords, onContactFinder }: Props) {
     const created = typeof dateFound === "string" ? new Date(dateFound) : dateFound;
     return (
         <Card className="rounded-2xl shadow-sm">
-            <CardHeader>
+            <CardHeader className="flex  justify-between">
                 <CardTitle className="text-lg">{title}</CardTitle>
                 {/* <div className="text-xs text-muted-foreground">
                     {formatDistanceToNow(created, { addSuffix: true })}
                 </div> */}
+
+                {
+                    type?.toLowerCase() === "lost"
+                    ? <Badge variant="destructive">{type.toUpperCase()}</Badge>
+                    : <Badge variant="default">{type.toUpperCase()}</Badge>
+                }
+
 
             </CardHeader>
 

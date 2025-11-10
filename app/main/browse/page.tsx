@@ -170,6 +170,7 @@ export default function BrowseItemsPage() {
 								<ItemCard
 									key={item.id}
 									title={item.itemName}
+									type={item.type}
 									dateFound={item.dateFound}
 									location={item.location}
 									description={item.description}
