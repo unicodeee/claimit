@@ -112,6 +112,14 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* globals.css */
+html, body {
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #111;
+  background-color: #f9fafb;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
