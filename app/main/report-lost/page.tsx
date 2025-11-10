@@ -79,6 +79,7 @@ export default function ReportLostPage() {
                 ...cleanData,
                 dateLost: Timestamp.fromDate(values.dateLost),
                 ownerUid: uid, // ID of this account who submit lost item
+                type: "lost", // mark item is lost type
                 photoURLs,
                 createdAt: Timestamp.now(),
             });
