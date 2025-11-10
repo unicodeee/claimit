@@ -20,6 +20,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Calendar} from "@/components/ui/calendar";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {CalendarIcon} from "lucide-react";
+import {Switch} from "@/components/ui/switch";
+import {Label} from "@/components/ui/label";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -42,6 +44,8 @@ export default function ReportLostPage() {
     const [loading, setLoading] = useState(false);
     const { uid } = useAuth();
     const [openDate, setOpenDate] = useState(false);
+
+    const [isFound, setIsFound] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -80,7 +84,7 @@ export default function ReportLostPage() {
                 ...cleanData,
                 dateLost: Timestamp.fromDate(values.dateLost),
                 ownerUid: uid, // ID of this account who submit lost item
-                type: "lost", // mark item is lost type
+                type: isFound, // mark item is lost type
                 photoURLs,
                 createdAt: Timestamp.now(),
             });
@@ -103,11 +107,28 @@ export default function ReportLostPage() {
                     Help reunite lost items with their owners or find what you’ve lost
                 </h2>
                 <div className="flex justify-center gap-4 mt-4">
-                    <Button className="bg-blue-600 text-white">Lost Item</Button>
-                    <Button variant="outline" onClick={() => router.push("/report-found")}>
-                        Found Item
-                    </Button>
+
+                    {/*bg-blue-600*/}
+
+
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="notifications"
+                            checked={isFound}
+                            onCheckedChange={setIsFound}
+                        />
+                        <Label htmlFor="notifications">
+                            {isFound
+                                ? <Button className="bg-blue-600 text-white">YOU FOUND THIS ITEM 😊</Button>
+                                : <Button className="bg-red-500 text-white">LOOKING FOR THIS ITEM 😥</Button>
+                                }
+                        </Label>
+                    </div>
                 </div>
+
+
+
+
             </section>
 
             {/* Main Form */}
