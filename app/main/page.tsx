@@ -1,12 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { app } from "@lib/firebaseConfig";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {useEffect, useState} from "react";
+import {getAuth, onAuthStateChanged, signOut} from "firebase/auth";
+import {useRouter} from "next/navigation";
+import {app} from "@lib/firebaseConfig";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
 
 const auth = getAuth(app);
 

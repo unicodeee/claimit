@@ -58,11 +58,6 @@ export default function MainDashboard() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.replace("/");
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navbar */}

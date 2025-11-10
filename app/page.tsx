@@ -36,7 +36,7 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         try {
             setLoading(true);
-            const result = await signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
             router.push("/main");
         } catch (error) {
             console.error("Login failed:", error);

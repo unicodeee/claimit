@@ -1,18 +1,13 @@
-
-
 "use client"
 
 import * as React from "react"
 import Link from "next/link"
-import { CircleCheckIcon, CircleHelpIcon, CircleIcon } from "lucide-react"
 
 import {
     NavigationMenu,
-    NavigationMenuContent,
     NavigationMenuItem,
     NavigationMenuLink,
     NavigationMenuList,
-    NavigationMenuTrigger,
     navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
 
@@ -32,11 +27,11 @@ const components: { title: string; href: string; description: string }[] = [
       href: "/main/report-lost",
       description: "Create a report for an item you’ve lost.",
     },
-    {
-      title: "Report Found",
-      href: "/main/report-found",
-      description: "Submit details for an item you’ve found.",
-    },
+    // {
+    //   title: "Report Found",
+    //   href: "/main/report-found",
+    //   description: "Submit details for an item you’ve found.",
+    // },
     {
       title: "My Profile",
       href: "/main/profile",

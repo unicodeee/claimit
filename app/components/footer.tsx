@@ -1,9 +1,9 @@
 // components/Footer.tsx
 "use client";
 
-import { IconButton } from "@/components/ui/icon-button";
-import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {IconButton} from "@/components/ui/icon-button";
+import {useRouter} from "next/navigation";
+
 export function Footer() {
     const router = useRouter();
 

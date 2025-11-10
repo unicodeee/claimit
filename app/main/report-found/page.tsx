@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { app } from "@lib/firebaseConfig";
-import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Button } from "@/components/ui/button";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {app} from "@lib/firebaseConfig";
+import {addDoc, collection, getFirestore, Timestamp} from "firebase/firestore";
+import {getDownloadURL, getStorage, ref, uploadBytes} from "firebase/storage";
+import {Button} from "@/components/ui/button";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -90,7 +89,7 @@ export default function ReportFoundPage() {
       {/* Page Header */}
       <section className="px-10 py-10 text-center">
         <h2 className="text-2xl font-semibold mb-2">
-          Help reunite lost items with their owners or report what you've found
+          {"Help reunite lost items with their owners or report what you've found"}
         </h2>
 
         <div className="flex justify-center gap-4 mt-4">
@@ -231,7 +230,7 @@ export default function ReportFoundPage() {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
             <ul className="space-y-3 text-sm text-gray-600">
-              <li>Be specific about the item's details.</li>
+              <li>{"Be specific about the item's details."}</li>
               <li>Mention any unique identifiers.</li>
               <li>Upload clear, well-lit photos.</li>
               <li>Include accurate location and time info.</li>

@@ -31,7 +31,7 @@ export function ItemCard({ title, description, dateFound, type, location, imgUrl
                 {
                     type?.toLowerCase() === "lost"
                     ? <Badge variant="destructive">{type.toUpperCase()}</Badge>
-                    : <Badge variant="default">{type.toUpperCase()}</Badge>
+                    : <Badge variant="default">{type?.toUpperCase()}</Badge>
                 }
 
 
@@ -50,7 +50,7 @@ export function ItemCard({ title, description, dateFound, type, location, imgUrl
                 {/* badge */}
                 <div className="flex gap-1">
                     {keywords?.map((keyword) => (
-                        <Badge variant="destructive">{'#' + keyword}</Badge>
+                        <Badge key={keyword} variant="destructive">{'#' + keyword}</Badge>
                     ))}
                 </div>
 

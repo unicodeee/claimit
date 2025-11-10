@@ -22,6 +22,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {CalendarIcon} from "lucide-react";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -42,10 +43,10 @@ const formSchema = z.object({
 export default function ReportLostPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const { uid } = useAuth();
+    const {uid} = useAuth();
     const [openDate, setOpenDate] = useState(false);
 
-    const [isFound, setIsFound] = useState(false)
+    const [isFound, setIsFound] = useState(true)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -77,7 +78,7 @@ export default function ReportLostPage() {
                 }
             }
 
-            const { photos, ...cleanData } = values;
+            const {photos, ...cleanData} = values;
 
             // upload
             await addDoc(collection(db, "items"), {
@@ -111,22 +112,31 @@ export default function ReportLostPage() {
                     {/*bg-blue-600*/}
 
 
-                    <div className="flex items-center space-x-2">
-                        <Switch
-                            id="notifications"
-                            checked={isFound}
-                            onCheckedChange={setIsFound}
-                        />
-                        <Label htmlFor="notifications">
-                            {isFound
-                                ? <Button className="bg-blue-600 text-white">YOU FOUND THIS ITEM 😊</Button>
-                                : <Button className="bg-red-500 text-white">LOOKING FOR THIS ITEM 😥</Button>
-                                }
-                        </Label>
-                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="notifications"
+                                    checked={isFound}
+                                    onCheckedChange={setIsFound}
+                                />
+                                <Label htmlFor="notifications">
+                                    {isFound
+                                        ? <Button className="bg-blue-600 text-white text-2xl">YOU FOUND THIS ITEM
+                                            😊</Button>
+                                        : <Button className="bg-red-500 text-white text-2xl">LOOKING FOR THIS ITEM
+                                            😥</Button>
+                                    }
+                                </Label>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <h1 className="text-2xl">Toggle to switch between lost/found item</h1>
+                        </TooltipContent>
+                    </Tooltip>
+
+
                 </div>
-
-
 
 
             </section>
@@ -144,13 +154,13 @@ export default function ReportLostPage() {
                         <FormField
                             control={form.control}
                             name="itemName"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Item Name</FormLabel>
                                     <FormControl>
                                         <Input placeholder="e.g., iPhone 13 Pro" {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
@@ -159,13 +169,13 @@ export default function ReportLostPage() {
                         <FormField
                             control={form.control}
                             name="category"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Category</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select category" />
+                                                <SelectValue placeholder="Select category"/>
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -176,7 +186,7 @@ export default function ReportLostPage() {
                                             <SelectItem value="Unknown">Unknown</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
@@ -185,7 +195,7 @@ export default function ReportLostPage() {
                         <FormField
                             control={form.control}
                             name="description"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
@@ -198,7 +208,7 @@ export default function ReportLostPage() {
                                     <FormDescription>
                                         Include any identifying marks or details.
                                     </FormDescription>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
@@ -209,7 +219,7 @@ export default function ReportLostPage() {
                             <FormField
                                 control={form.control}
                                 name="dateLost"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel>Date Lost</FormLabel>
                                         <Popover open={openDate} onOpenChange={setOpenDate}>
@@ -225,7 +235,7 @@ export default function ReportLostPage() {
                                                             year: "numeric",
                                                         })
                                                         : "Select date"}
-                                                    <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+                                                    <CalendarIcon className="ml-2 h-4 w-4 opacity-50"/>
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent
@@ -243,7 +253,7 @@ export default function ReportLostPage() {
                                                 />
                                             </PopoverContent>
                                         </Popover>
-                                        <FormMessage />
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
@@ -252,7 +262,7 @@ export default function ReportLostPage() {
                             <FormField
                                 control={form.control}
                                 name="timeLost"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Time Lost</FormLabel>
                                         <FormControl>
@@ -263,7 +273,7 @@ export default function ReportLostPage() {
                                                 className="bg-background"
                                             />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
@@ -272,13 +282,13 @@ export default function ReportLostPage() {
                             <FormField
                                 control={form.control}
                                 name="location"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Location</FormLabel>
                                         <FormControl>
                                             <Input placeholder="e.g., Central Park, Library" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
@@ -288,7 +298,7 @@ export default function ReportLostPage() {
                         <FormField
                             control={form.control}
                             name="photos"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Photos</FormLabel>
                                     <FormControl>
@@ -312,33 +322,33 @@ export default function ReportLostPage() {
                             <FormField
                                 control={form.control}
                                 name="name"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Full Name</FormLabel>
                                         <FormControl>
                                             <Input placeholder="John Doe" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
                             <FormField
                                 control={form.control}
                                 name="email"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
                                             <Input placeholder="your.email@sjsu.edu" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
                             <FormField
                                 control={form.control}
                                 name="phone"
-                                render={({ field }) => (
+                                render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Phone (optional)</FormLabel>
                                         <FormControl>
