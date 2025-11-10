@@ -173,7 +173,7 @@ export default function BrowseItemsPage() {
 									dateFound={item.dateFound}
 									location={item.location}
 									description={item.description}
-									imgUrl={item.images?.[0] ?? "/hero-people.png"}
+									imgUrl={item.photoURLs?.[0] ?? undefined}
 									keywords={item.keywords}
 									onContactFinder={onContactFinder}
 								/>

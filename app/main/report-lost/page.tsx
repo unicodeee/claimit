@@ -75,6 +75,7 @@ export default function ReportLostPage() {
 
             const { photos, ...cleanData } = values;
 
+            // upload
             await addDoc(collection(db, "items"), {
                 ...cleanData,
                 dateLost: Timestamp.fromDate(values.dateLost),

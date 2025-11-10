@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 // import { formatDistanceToNow } from "date-fns";
 import { Item } from "@/lib/validators/itemSchema";
 import { MapPin } from 'lucide-react';
+import {AspectRatio} from "@radix-ui/react-aspect-ratio";
 
 
 type Props = Pick<Item, "title" | "dateFound" | "location" | "keywords" | "description"> & {
@@ -30,13 +31,14 @@ export function ItemCard({ title, description, dateFound, location, imgUrl, keyw
             </CardHeader>
 
             <CardContent className="flex flex-col justify-between gap-4">
-                <Image
-                    src={imgUrl ?? "/placeholder.png"}  // ✅ fallback
-                    alt="Community illustration"
-                    width={350}
-                    height={250}
-                    className="rounded-xl mt-10 md:mt-0 shadow-2xl"
-                />
+                <AspectRatio ratio={4 / 3}>
+                    <Image
+                        src={imgUrl ?? "/no-img.png"}
+                        alt="Item image"
+                        fill
+                        className="object-contain rounded-xl shadow-2xl"
+                    />
+                </AspectRatio>
 
                 {/* badge */}
                 <div className="flex gap-1">

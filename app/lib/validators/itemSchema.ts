@@ -8,7 +8,7 @@ export const itemSchema = z.object({
   claimCount: z.number().default(0).optional(),
   createdAt: z.union([z.date(), z.string()]).optional(),   // Firestore Timestamp or string
   description: z.string().optional(),
-  images: z.array(z.string()).optional(),
+  photoURLs: z.array(z.string()).optional(),
   isFlagged: z.boolean().default(false).optional(),
   keywords: z.array(z.string()).optional(),
   dateFound: z.union([z.date(), z.string()]).optional(),
