@@ -54,7 +54,7 @@ export default function LoginPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight text-balance text-black">Claimit</h1>
             </header>
 
-            <div className="bg-gradient-to-r from-[#2563EB] via-[#9333EA] to-[#4338CA] w-full pt-12 pb-12">
+            <div className="bg-gradient-to-r from-[#2563EB] via-[#9333EA] to-[#4338CA] w-full py-14 px-10 flex flex-col md:flex-row items-center justify-between">
                 {/*// left block*/}
                 <div className="flex items-center justify-center gap-6">
                     <div className="flex flex-col items-start p-8 dark:bg-gray-800 rounded-2xl gap-6 max-w-lg">
@@ -82,15 +82,16 @@ export default function LoginPage() {
 
                         </Button>
                     </div>
-                    <Image
-                        alt="Landing"
-                        src="/landing-img1.png"
-                        width={250}
-                        height={250}
-                        className="rounded-xl dark:invert shadow-2xl max-w-lg max-h-lg"
 
-                    />
                 </div>
+                <Image
+                    alt="Landing"
+                    src="/landing-img1.png"
+                    width={250}
+                    height={250}
+                    className="rounded-xl dark:invert shadow-2xl max-w-lg max-h-lg"
+
+                />
             </div>
 
             <div className="flex flex-col justify-center items-center gap-6 pt-6 pb-6">
