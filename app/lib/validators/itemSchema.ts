@@ -20,6 +20,10 @@ export const itemSchema = z.object({
   title: z.string().optional(),
   type: z.enum(["lost", "found"]).optional(),
   viewCount: z.number().default(0).optional(),
+
+  email: z.email().optional(),
+  name: z.string().optional(),
+  phone: z.string().length(10).optional(),
 });
 
 export type Item = z.infer<typeof itemSchema>;

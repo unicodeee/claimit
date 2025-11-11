@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { onSnapshot, query, collection, orderBy } from "firebase/firestore";
 import db from "@/lib/firestore";
+import Link from "next/link";
 
 export default function BrowseItemsPage() {
 	const [items, setItems] = useState<Item[]>([]);
@@ -167,17 +168,20 @@ export default function BrowseItemsPage() {
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 							{filteredItems.map((item) => (
-								<ItemCard
-									key={item.id}
-									title={item.itemName}
-									type={item.type}
-									dateFound={item.dateFound}
-									location={item.location}
-									description={item.description}
-									imgUrl={item.photoURLs?.[0] ?? undefined}
-									keywords={item.keywords}
-									onContactFinder={onContactFinder}
-								/>
+
+								<Link key={item.id} href={`/main/items/${item.id}`}>
+									<ItemCard
+										key={item.id}
+										title={item.itemName}
+										type={item.type}
+										dateFound={item.dateFound}
+										location={item.location}
+										description={item.description}
+										imgUrl={item.photoURLs?.[0] ?? undefined}
+										keywords={item.keywords}
+										onContactFinder={onContactFinder}
+									/>
+								</Link>
 							))}
 						</div>
 					)}
