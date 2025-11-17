@@ -43,6 +43,7 @@ interface Item {
   location: string;
   type: boolean;
   category?: string;
+  photoURLs?: string[]; // optional array of photo URLs
 }
 
 export default function ProfilePage() {
@@ -283,11 +284,14 @@ export default function ProfilePage() {
                   filterType === "all" ? true : filterType === "found" ? i.type : !i.type
                 )
                 .map((item) => (
-                  <ItemCard
+                  < ItemCard
                     key={item.id}
-                    item={item}
+                    name={item.itemName}
+                    desc={item.description}
+                    type={item.type}
+                    location={item.location}
+                    photoURLs={item.photoURLs}
                     onDelete={() => handleDelete(item.id)}
-                    onEdit={() => setEditingItem(item)} // 🆕 点击编辑
                   />
                 ))
             ) : (
@@ -299,7 +303,7 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      {/* 🆕 编辑弹窗 */}
+      {/* edit Dialog */}
       <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -381,25 +385,50 @@ function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any)
   );
 }
 
-function ItemCard({ item, onDelete, onEdit }: any) {
+// Each item card showing image + text details
+function ItemCard({ name, desc, type, location, photoURLs, onDelete }: any) {
   return (
-    <Card className="p-4 shadow-sm border border-gray-200">
-      <div className="flex justify-between items-start">
-        <span
-          className={`px-2 py-1 text-xs font-semibold rounded ${
-            item.type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}
-        >
-          {item.type ? "FOUND" : "LOST"}
-        </span>
-        <div className="flex gap-2 text-gray-400 cursor-pointer">
-          <span onClick={onEdit}>✎</span>
-          <span onClick={onDelete}>🗑️</span>
+    <Card className="p-0 shadow-sm border border-gray-200 overflow-hidden rounded-xl">
+      {/* ---------- IMAGE SECTION ---------- */}
+      <div className="relative w-full bg-gray-100">
+        {/* Using a fixed aspect ratio for consistent layout */}
+        <div className="relative w-full aspect-[4/3]">
+          <Image
+            src={photoURLs?.[0] ?? "/no-img.png"} // first image or placeholder
+            alt={name}
+            fill
+            className="object-contain bg-gray-100"
+          />
         </div>
       </div>
-      <h3 className="font-semibold mt-2">{item.itemName}</h3>
-      <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
-      <p className="text-xs text-gray-400 mt-1">📍 {item.location}</p>
+
+      {/* ---------- TEXT SECTION ---------- */}
+      <div className="p-4">
+        {/* Header with LOST / FOUND tag + icons */}
+        <div className="flex justify-between items-start">
+          <span
+            className={`px-2 py-1 text-xs font-semibold rounded ${
+              type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            }`}
+          >
+            {type ? "FOUND" : "LOST"}
+          </span>
+
+          {/* Edit/Delete icons (optional) */}
+          <div className="flex gap-2 text-gray-400 cursor-pointer">
+            <span title="Edit">✎</span>
+            <span title="Delete" onClick={onDelete}>
+              🗑️
+            </span>
+          </div>
+        </div>
+
+        {/* ---------- ITEM DETAILS ---------- */}
+        <h3 className="font-semibold mt-2 text-gray-900 truncate">{name}</h3>
+        <p className="text-sm text-gray-600 line-clamp-2">{desc}</p>
+        <p className="text-xs text-gray-500 mt-1">📍 {location}</p>
+      </div>
     </Card>
   );
 }
+

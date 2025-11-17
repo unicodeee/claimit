@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ItemCard } from "@/components/ui/ItemCard";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -38,10 +39,15 @@ interface FirestoreItem {
   email?: string;
 }
 
+import { useSearchParams } from "next/navigation";
 export default function BrowseItemsPage() {
   const [items, setItems] = useState<FirestoreItem[]>([]);
   const [search, setSearch] = useState("");
-  const [type, setType] = useState<"all" | "lost" | "found">("all");
+  const params = useSearchParams();
+  const initialType =
+    (params.get("type") as "all" | "lost" | "found") || "all";
+  const [type, setType] = useState<"all" | "lost" | "found">(initialType);
+
   const [category, setCategory] = useState("all");
   const [location, setLocation] = useState("all");
   const [datePosted, setDatePosted] = useState("");
@@ -106,9 +112,6 @@ export default function BrowseItemsPage() {
     });
   }, [items, search, type, category, location, datePosted]);
 
-  const onContactFinder = (email?: string) => {
-    if (email) window.location.href = `mailto:${email}`;
-  };
 
   return (
     <div className="pt-5 grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -221,17 +224,18 @@ export default function BrowseItemsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredItems.map((item) => (
-                // 放在标签外面的说明：这里给 ItemCard 的 type 传统一后的字符串 "lost"/"found"
-                <ItemCard
-                  key={item.id}
-                  title={item.itemName}
-                  type={item.status}
-                  dateFound={item.dateFound}
-                  location={item.location}
-                  description={item.description}
-                  imgUrl={item.photoURLs?.[0] ?? undefined}
-                  onContactFinder={() => onContactFinder(item.email)}
-                />
+                <Link key={item.id} href={`/main/item/${item.id}`}>
+                  <ItemCard
+                    key={item.id}
+                    title={item.itemName}
+                    type={item.status}
+                    dateFound={item.dateFound}
+                    location={item.location}
+                    description={item.description}
+                    imgUrl={item.photoURLs?.[0] ?? undefined}
+                    buttonText={item.status === "found" ? "Contact Finder" : "Contact Owner"}
+                  />
+                </Link>
               ))}
             </div>
           )}
