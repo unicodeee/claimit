@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -53,6 +53,14 @@ const formSchema = z.object({
 });
 
 export default function ReportLostPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading form...</div>}>
+      <ReportLostContent />
+    </Suspense>
+  );
+}
+
+function ReportLostContent() {
     const router = useRouter();
     const params = useSearchParams();
     const returnTo = params.get("returnTo") || "/main/profile";

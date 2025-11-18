@@ -207,7 +207,7 @@ export default function MainDashboard() {
                   <p className="text-sm text-gray-500">{item.location}</p>
                   <Button
                     className={`w-full mt-2 text-white ${String(item.status).toLowerCase() === "lost"
-                        ? "bg-blue-600 hover:bg-blue-700"
+                        ? "bg-red-600 hover:bg-red-700"
                         : "bg-green-600 hover:bg-green-700"
                       }`}
                     onClick={() => router.push(`/main/item/${item.id}`)}
