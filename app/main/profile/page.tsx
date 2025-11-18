@@ -178,7 +178,7 @@ export default function ProfilePage() {
     router.push(`${target}?type=${type}&returnTo=${encodeURIComponent(returnTo)}`);
   };
 
-  // 📝 保存编辑后的 item
+  // Save edited item
   const handleSaveEdit = async () => {
     if (!editingItem) return;
     setLoading(true);
@@ -200,6 +200,36 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+
+  // 📸 Update item photo (inside edit dialog)
+  const handleImageUpdate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editingItem || !uid) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setLoading(true);
+      const storageRef = ref(storage, `items/${uid}-${Date.now()}-${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      // update photoURLs array in Firestore
+      const updatedPhotos = [...(editingItem.photoURLs || []), url];
+      await updateDoc(doc(db, "items", editingItem.id), {
+        photoURLs: updatedPhotos,
+        updatedAt: serverTimestamp(),
+      });
+
+      // asynchronously update local state, immdiately show new photo in UI
+      setEditingItem({ ...editingItem, photoURLs: updatedPhotos });
+      alert("Photo uploaded successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to upload photo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const avatarSrc =
     photoURL ||
@@ -291,6 +321,7 @@ export default function ProfilePage() {
                     type={item.type}
                     location={item.location}
                     photoURLs={item.photoURLs}
+                    onEdit={() => setEditingItem(item)}  // when edit icon clicked
                     onDelete={() => handleDelete(item.id)}
                   />
                 ))
@@ -326,6 +357,25 @@ export default function ProfilePage() {
                 }
                 placeholder="Description"
               />
+              {/* 🖼️ Image Upload */}
+              <div>
+                <Label className="text-sm text-gray-600">Add or Replace Photos</Label>
+                <Input type="file" accept="image/*" onChange={handleImageUpdate} />
+                {/* photo preview */}
+                <div className="flex gap-2 mt-2 overflow-x-auto">
+                  {(editingItem.photoURLs || []).map((url, idx) => (
+                    <Image
+                      key={idx}
+                      src={url}
+                      alt={`photo-${idx}`}
+                      width={80}
+                      height={80}
+                      className="rounded-md border border-gray-200 object-cover"
+                    />
+                  ))}
+                </div>
+              </div>
+
               <Input
                 value={editingItem.location}
                 onChange={(e) =>
@@ -386,7 +436,7 @@ function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any)
 }
 
 // Each item card showing image + text details
-function ItemCard({ name, desc, type, location, photoURLs, onDelete }: any) {
+function ItemCard({ name, desc, type, location, photoURLs, onEdit, onDelete }: any) {
   return (
     <Card className="p-0 shadow-sm border border-gray-200 overflow-hidden rounded-xl">
       {/* ---------- IMAGE SECTION ---------- */}
@@ -407,16 +457,15 @@ function ItemCard({ name, desc, type, location, photoURLs, onDelete }: any) {
         {/* Header with LOST / FOUND tag + icons */}
         <div className="flex justify-between items-start">
           <span
-            className={`px-2 py-1 text-xs font-semibold rounded ${
-              type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
+            className={`px-2 py-1 text-xs font-semibold rounded ${type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
           >
             {type ? "FOUND" : "LOST"}
           </span>
 
           {/* Edit/Delete icons (optional) */}
           <div className="flex gap-2 text-gray-400 cursor-pointer">
-            <span title="Edit">✎</span>
+            <span title="Edit" onClick={onEdit}>✎</span>
             <span title="Delete" onClick={onDelete}>
               🗑️
             </span>

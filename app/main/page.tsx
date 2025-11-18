@@ -194,8 +194,8 @@ export default function MainDashboard() {
                 <CardContent className="p-4 space-y-2">
                   <span
                     className={`px-2 py-1 text-xs font-semibold text-white rounded ${item.status === "lost"
-                        ? "bg-red-500"
-                        : "bg-green-500"
+                      ? "bg-red-500"
+                      : "bg-green-500"
                       }`}
                   >
                     {item.status?.toUpperCase()}
@@ -206,13 +206,13 @@ export default function MainDashboard() {
                   </p>
                   <p className="text-sm text-gray-500">{item.location}</p>
                   <Button
-                    className={`w-full mt-2 text-white ${item.status === "lost"
+                    className={`w-full mt-2 text-white ${String(item.status).toLowerCase() === "lost"
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-green-600 hover:bg-green-700"
                       }`}
                     onClick={() => router.push(`/main/item/${item.id}`)}
                   >
-                    {item.status === "lost"
+                    {item.status?.toString().toLowerCase() === "lost"
                       ? "Contact Owner"
                       : "Contact Finder"}
                   </Button>
