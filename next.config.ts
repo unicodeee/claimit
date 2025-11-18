@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+    /* config options here */
     images: {
         remotePatterns: [
             {
@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
             {
                 protocol: "https",
                 hostname: "lh3.googleusercontent.com",
+            },
+            {
+                protocol: "https",
+                hostname: "api.dicebear.com", // Added for avatar generation
             },
         ],
     },

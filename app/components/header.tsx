@@ -42,7 +42,7 @@ export function Header() {
       </div>
 
       {/* Middle: Nav can be added here */}
-      <nav className="hidden md:flex gap-6 text-gray-600 font-medium">
+      <nav className="hidden md:flex gap-6 text-gray-800 font-large">
         <a href="/main" className="hover:text-blue-600">Home</a>
         <a href="/browse" className="hover:text-blue-600">Browse Items</a>
         <a href="/report-lost" className="hover:text-blue-600">Report Lost</a>
@@ -75,21 +75,3 @@ export function Header() {
     </header>
   );
 }
-
-// app/components/Header.tsx
-// "use client";
-
-
-
-// import {NavigationMenuDemo} from "@/components/nav";
-
-
-// export function Header() {
-//     return (
-//         <header className="flex items-center justify-center w-full bg-white dark:bg-gray-900 shadow">
-//             <NavigationMenuDemo />
-//         </header>
-
-
-//     );
-// }
