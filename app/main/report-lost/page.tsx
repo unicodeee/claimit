@@ -53,11 +53,11 @@ const formSchema = z.object({
 });
 
 export default function ReportLostPage() {
-  return (
-    <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading form...</div>}>
-      <ReportLostContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div className="p-10 text-center text-gray-500">Loading form...</div>}>
+            <ReportLostContent />
+        </Suspense>
+    );
 }
 
 function ReportLostContent() {
@@ -91,7 +91,7 @@ function ReportLostContent() {
 
     // 🧩 Handle submit
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        if (!uid) return alert("Please login first.");
+        if (!uid) return alert("Please in first.");
         setLoading(true);
         try {
             const fileList = values.photos as FileList | null;
@@ -329,22 +329,74 @@ function ReportLostContent() {
                                 )}
                             />
 
-                            {/* Location */}
+                            {/* ---------- Location (Fancy Map version) ---------- */}
                             <FormField
                                 control={form.control}
                                 name="location"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Location</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g., Central Park, Library" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    // coordinates for map preview
+                                    const LOCATIONS: Record<string, { lng: number; lat: number }> = {
+                                        Campus: { lng: -121.8807, lat: 37.3352 },
+                                        Library: { lng: -121.8821, lat: 37.3357 },
+                                        Cafeteria: { lng: -121.881, lat: 37.3349 },
+                                        Gym: { lng: -121.8795, lat: 37.3365 },
+                                    };
+
+                                    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+                                    return (
+                                        <FormItem>
+                                            <FormLabel>Location</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select Location" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {Object.keys(LOCATIONS).map((key) => (
+                                                        <SelectItem key={key} value={key}>
+                                                            📍 {key}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {/* Map Preview with marker, animation & night theme */}
+                                            <AnimatePresence mode="wait">
+                                                {field.value && LOCATIONS[field.value] && (
+                                                    <motion.div
+                                                        key={field.value}
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        className="mt-4"
+                                                    >
+                                                        <img
+                                                            src={`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/pin-s+ff0000(${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat})/${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat},16,0/400x250?access_token=${MAPBOX_TOKEN}`}
+                                                            alt="Map preview"
+                                                            className="rounded-lg shadow-md border cursor-pointer hover:opacity-90 transition"
+                                                            onClick={() =>
+                                                                window.open(
+                                                                    `https://www.google.com/maps?q=${LOCATIONS[field.value].lat},${LOCATIONS[field.value].lng}`,
+                                                                    "_blank"
+                                                                )
+                                                            }
+                                                        />
+                                                        <p className="text-xs text-gray-400 mt-1 italic">
+                                                            Click the map to view on Google Maps
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                         </div>
-
                         {/* Photos */}
                         <FormField
                             control={form.control}

@@ -171,6 +171,7 @@ export default function BrowseItemsContent() {
                 <SelectItem value="campus">Campus</SelectItem>
                 <SelectItem value="library">Library</SelectItem>
                 <SelectItem value="cafeteria">Cafeteria</SelectItem>
+                <SelectItem value="Gym">Gym</SelectItem>
               </SelectContent>
             </Select>
           </div>
