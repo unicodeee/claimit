@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  DocumentData,
+} from "firebase/firestore";
 import { app } from "@lib/firebaseConfig";
 import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
@@ -10,9 +19,19 @@ import { Input } from "@/components/ui/input";
 
 const db = getFirestore(app);
 
+// Define a strict Message type
+interface Message {
+  id: string;
+  text: string;
+  senderUid: string;
+  senderName: string;
+  senderPhoto?: string;
+  timestamp?: any; // Firestore timestamp
+}
+
 export function ChatBox({ itemId }: { itemId: string }) {
   const { uid, user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -31,22 +50,38 @@ export function ChatBox({ itemId }: { itemId: string }) {
     );
   }
 
-  // Load messages
+  // Always call hooks at the top level
   useEffect(() => {
+    if (!itemId) return;
     const q = query(
       collection(db, "items", itemId, "messages"),
       orderBy("timestamp", "asc")
     );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const data: Message[] = snapshot.docs.map((doc) => {
+        const d = doc.data() as DocumentData;
+        return {
+          id: doc.id,
+          text: d.text || "",
+          senderUid: d.senderUid || "",
+          senderName: d.senderName || "Anonymous",
+          senderPhoto: d.senderPhoto || "",
+          timestamp: d.timestamp,
+        };
+      });
+      setMessages(data);
     });
+
     return () => unsubscribe();
   }, [itemId]);
 
+  // Auto-scroll when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Send a new message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;

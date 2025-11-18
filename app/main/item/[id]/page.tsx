@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldAlert, ChevronLeft, ChevronRight, Phone, Mail, User } from "lucide-react";
 
 const db = getFirestore(app);
 
@@ -31,7 +31,7 @@ interface Item {
   dateFound?: any;
   photoURLs?: string[];
   email?: string;
-  contactName?: string;
+  name?: string;
   phone?: string;
 }
 
@@ -49,6 +49,7 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<Item | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0); // show which image in carousel
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -130,17 +131,16 @@ export default function ItemDetailPage() {
                   </>
                 )}
 
-                {/* thumbnails */} 
+                {/* thumbnails */}
                 {photos.length > 1 && (
                   <div className="flex justify-center mt-2 gap-2">
                     {photos.map((url, idx) => (
                       <div
                         key={idx}
-                        className={`w-16 h-12 cursor-pointer rounded-md overflow-hidden border ${
-                          idx === currentIndex
-                            ? "border-blue-500"
-                            : "border-transparent"
-                        }`}
+                        className={`w-16 h-12 cursor-pointer rounded-md overflow-hidden border ${idx === currentIndex
+                          ? "border-blue-500"
+                          : "border-transparent"
+                          }`}
                         onClick={() => setCurrentIndex(idx)}
                       >
                         <Image
@@ -173,24 +173,22 @@ export default function ItemDetailPage() {
 
           {/* ---------- CONTACT BUTTON ---------- */}
           <Button
-            className={`text-white mb-8 transition-transform duration-150 active:scale-95 ${
-              item.status === "found"
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-red-500 hover:bg-red-600"
-            }`}
+            className={`text-white mb-8 transition-transform duration-150 active:scale-95 ${item.status === "found"
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-red-500 hover:bg-red-600"
+              }`}
             onClick={() => setOpenDialog(true)}
           >
             💬 {item.status === "found" ? "Contact Finder" : "Contact Owner"}
           </Button>
 
           {/* ---------- DIALOG ---------- */}
+          {/* ---------- DIALOG ---------- */}
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
                 <DialogTitle>
-                  {item.status === "found"
-                    ? "Contact Finder"
-                    : "Contact Owner"}
+                  {item.status === "found" ? "Contact Finder" : "Contact Owner"}
                 </DialogTitle>
                 <DialogDescription>
                   Choose how you want to contact the{" "}
@@ -199,44 +197,101 @@ export default function ItemDetailPage() {
               </DialogHeader>
 
               <div className="flex flex-col gap-3 py-4">
-                <Button onClick={scrollToChat} className="bg-blue-600 text-white">
+                {/* 💬 Chat in App */}
+                <Button
+                  onClick={() => {
+                    setOpenDialog(false);
+                    setShowChat(true);
+                    setTimeout(() => {
+                      document.getElementById("chat-box")?.scrollIntoView({ behavior: "smooth" });
+                    }, 200);
+                  }}
+                  className="bg-blue-600 text-white flex items-center justify-center gap-2"
+                >
                   💬 Chat in App
                 </Button>
-                <Button onClick={sendEmail} variant="outline">
+
+                {/* 📧 Send Email */}
+                <Button
+                  onClick={sendEmail}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2"
+                >
                   📧 Send Email
                 </Button>
-                <Button variant="ghost" onClick={() => setOpenDialog(false)}>
+
+                {/* 📞 Call by Phone */}
+                <Button
+                  onClick={() => {
+                    if (item?.phone) {
+                      window.location.href = `tel:${item.phone}`;
+                    } else {
+                      alert("This user didn't provide a phone number.");
+                    }
+                    setOpenDialog(false);
+                  }}
+                  variant="secondary"
+                  className="flex items-center justify-center gap-2"
+                >
+                  📞 Call by Phone
+                </Button>
+
+                {/* Cancel */}
+                <Button
+                  variant="ghost"
+                  onClick={() => setOpenDialog(false)}
+                  className="flex items-center justify-center gap-2"
+                >
                   Cancel
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
 
+
           {/* ---------- CHAT SECTION ---------- */}
-          <div id="chat-box" className="mt-10">
-            <h2 className="text-xl font-semibold mb-3">
-              {item.status === "found"
-                ? "Chat with Finder"
-                : "Chat with Owner"}
-            </h2>
-            <ChatBox itemId={item.id} />
-          </div>
+          {showChat && (
+            <div id="chat-box" className="mt-10">
+              <h2 className="text-xl font-semibold mb-3">
+                {item.status === "found" ? "Chat with Finder" : "Chat with Owner"}
+              </h2>
+              <ChatBox itemId={item.id} />
+            </div>
+          )}
         </div>
 
         {/* ---------- RIGHT SIDEBAR ---------- */}
         <div className="flex-[1] flex flex-col gap-4">
           <Card className="p-6">
-            <h3 className="font-semibold mb-2 text-gray-800">
-              {item.status === "found"
-                ? "Finder Information"
-                : "Owner Information"}
+            <h3 className="font-semibold mb-3 text-gray-800">
+              {item.status === "found" ? "Finder Information" : "Owner Information"}
             </h3>
-            <p className="font-medium text-gray-700">
-              {item.contactName || "Anonymous"}
-            </p>
-            <p className="text-sm text-gray-600">{item.email || "No email"}</p>
-            <p className="text-sm text-gray-600">{item.phone || "No phone"}</p>
+
+            <div className="space-y-2 text-gray-700">
+              {/* Name */}
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="font-medium">{item.name || "Anonymous"}</span>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  {item.email || "No email"}
+                </span>
+              </div>
+
+              {/* Phone */}
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  {item.phone || "No phone"}
+                </span>
+              </div>
+            </div>
           </Card>
+
 
           {/* ---------- SAFETY TIPS ---------- */}
           <Card className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex gap-3 items-start">
