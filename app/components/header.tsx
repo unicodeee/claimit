@@ -45,8 +45,7 @@ export function Header() {
       <nav className="hidden md:flex gap-6 text-gray-800 font-large">
         <a href="/main" className="hover:text-blue-600">Home</a>
         <a href="/browse" className="hover:text-blue-600">Browse Items</a>
-        <a href="/report-lost" className="hover:text-blue-600">Report Lost</a>
-        <a href="/report-found" className="hover:text-blue-600">Report Found</a>
+        <a href="/report-lost" className="hover:text-blue-600">Report Item</a>
         <a href="/profile" className="hover:text-blue-600">My Profile</a>
       </nav>
 

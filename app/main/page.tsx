@@ -86,7 +86,8 @@ export default function MainDashboard() {
           </p>
           <div className="flex gap-4 mt-6">
             <Button
-              className="bg-white text-blue-700 font-semibold hover:bg-gray-100"
+              variant="secondary"
+              className="bg-transparent border border-white hover:bg-white hover:text-blue-700"
               onClick={() => router.push("/main/report-lost")}
             >
               Report Lost Item
@@ -124,8 +125,8 @@ export default function MainDashboard() {
                 Report your lost item and get help from others.
               </p>
               <Button
-                variant="destructive"
-                className="w-full"
+                variant="default"
+                className="bg-red-600 hover:bg-red-700 w-full"
                 onClick={() => router.push("/main/report-lost")}
               >
                 Report Lost
@@ -156,8 +157,8 @@ export default function MainDashboard() {
                 Search through all lost and found items.
               </p>
               <Button
-                variant="outline"
-                className="w-full"
+                variant="default"
+                className="bg-blue-600 hover:bg-blue-700 w-full"
                 onClick={() => router.push("/main/browse?type=all")}
               >
                 Start Browsing
@@ -207,8 +208,8 @@ export default function MainDashboard() {
                   <p className="text-sm text-gray-500">{item.location}</p>
                   <Button
                     className={`w-full mt-2 text-white ${String(item.status).toLowerCase() === "lost"
-                        ? "bg-red-600 hover:bg-red-700"
-                        : "bg-green-600 hover:bg-green-700"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-green-600 hover:bg-green-700"
                       }`}
                     onClick={() => router.push(`/main/item/${item.id}`)}
                   >

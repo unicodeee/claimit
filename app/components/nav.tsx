@@ -23,15 +23,10 @@ const components: { title: string; href: string; description: string }[] = [
       description: "Explore all reported lost and found items.",
     },
     {
-      title: "Report Lost",
+      title: "Report Items",
       href: "/main/report-lost",
       description: "Create a report for an item you’ve lost.",
     },
-    // {
-    //   title: "Report Found",
-    //   href: "/main/report-found",
-    //   description: "Submit details for an item you’ve found.",
-    // },
     {
       title: "My Profile",
       href: "/main/profile",
