@@ -8,14 +8,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChatBox } from "@/components/chatbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { ShieldAlert, ChevronLeft, ChevronRight, Phone, Mail, User } from "lucide-react";
+import { ShieldAlert, ChevronLeft, ChevronRight, Phone, Mail, User, Coffee } from "lucide-react";
 
 const db = getFirestore(app);
 
@@ -27,12 +20,14 @@ interface Item {
   category?: string;
   type?: boolean | string;
   status?: "lost" | "found";
+  ownerUid?: string;
   createdAt?: any;
   dateFound?: any;
   photoURLs?: string[];
   email?: string;
   name?: string;
   phone?: string;
+  coffeeLink?: string;
 }
 
 // format Firestore timestamp to readable date
@@ -47,8 +42,7 @@ export default function ItemDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const [item, setItem] = useState<Item | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0); // show which image in carousel
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
@@ -60,12 +54,10 @@ export default function ItemDetailPage() {
     fetchItem();
   }, [id]);
 
-  if (!item)
-    return <p className="text-center text-gray-500 mt-20">Loading...</p>;
+  if (!item) return <p className="text-center text-gray-500 mt-20">Loading...</p>;
 
-  const photos = item.photoURLs ?? []; // make sure it's an array
+  const photos = item.photoURLs ?? [];
 
-  // ---------- Carousel controls ----------
   const nextImage = () => {
     if (!photos.length) return;
     setCurrentIndex((prev) => (prev + 1) % photos.length);
@@ -76,15 +68,8 @@ export default function ItemDetailPage() {
     setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
   };
 
-  const sendEmail = () => {
-    setOpenDialog(false);
-    if (item?.email) window.location.href = `mailto:${item.email}`;
-    else alert("This user didn't provide an email address.");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ---------- MAIN WRAPPER ---------- */}
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 px-6 py-10">
         {/* ---------- LEFT COLUMN ---------- */}
         <div className="flex-[3] min-w-0">
@@ -92,7 +77,6 @@ export default function ItemDetailPage() {
           <div className="relative w-full rounded-xl overflow-hidden bg-gray-100 mb-6">
             {photos.length ? (
               <>
-                {/* main image */}
                 <Image
                   src={photos[currentIndex]}
                   alt={item.itemName}
@@ -101,13 +85,9 @@ export default function ItemDetailPage() {
                   className="w-full h-auto object-contain transition-all duration-300"
                   priority
                 />
-
-                {/* page indicator */}
                 <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
                   {currentIndex + 1} / {photos.length}
                 </div>
-
-                {/* left and right buttons */}
                 {photos.length > 1 && (
                   <>
                     <button
@@ -123,30 +103,6 @@ export default function ItemDetailPage() {
                       <ChevronRight size={20} />
                     </button>
                   </>
-                )}
-
-                {/* thumbnails */}
-                {photos.length > 1 && (
-                  <div className="flex justify-center mt-2 gap-2">
-                    {photos.map((url, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-16 h-12 cursor-pointer rounded-md overflow-hidden border ${idx === currentIndex
-                          ? "border-blue-500"
-                          : "border-transparent"
-                          }`}
-                        onClick={() => setCurrentIndex(idx)}
-                      >
-                        <Image
-                          src={url}
-                          alt={`thumb-${idx}`}
-                          width={80}
-                          height={60}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                    ))}
-                  </div>
                 )}
               </>
             ) : (
@@ -165,81 +121,19 @@ export default function ItemDetailPage() {
             <p>📂 Category: {item.category || "Uncategorized"}</p>
           </div>
 
-          {/* ---------- CONTACT BUTTON ---------- */}
+          {/* ---------- CHAT BUTTON ---------- */}
           <Button
             variant={item.status === "found" ? "found" : "lost"}
             className="mb-8 transition-transform duration-150 active:scale-95"
-            onClick={() => setOpenDialog(true)}
+            onClick={() => {
+              setShowChat(true);
+              setTimeout(() => {
+                document.getElementById("chat-box")?.scrollIntoView({ behavior: "smooth" });
+              }, 200);
+            }}
           >
-            💬 {item.status === "found" ? "Contact Finder" : "Contact Owner"}
+            💬 {item.status === "found" ? "Chat with Finder" : "Chat with Owner"}
           </Button>
-
-          {/* ---------- DIALOG ---------- */}
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>
-                  {item.status === "found" ? "Contact Finder" : "Contact Owner"}
-                </DialogTitle>
-                <DialogDescription>
-                  Choose how you want to contact the{" "}
-                  {item.status === "found" ? "finder" : "owner"}.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="flex flex-col gap-3 py-4">
-                {/* 💬 Chat in App */}
-                <Button
-                  onClick={() => {
-                    setOpenDialog(false);
-                    setShowChat(true);
-                    setTimeout(() => {
-                      document.getElementById("chat-box")?.scrollIntoView({ behavior: "smooth" });
-                    }, 200);
-                  }}
-                  variant="gradient"
-                  className="flex items-center justify-center gap-2"
-                >
-                  💬 Chat in App
-                </Button>
-
-                {/* 📧 Send Email */}
-                <Button
-                  onClick={sendEmail}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2"
-                >
-                  📧 Send Email
-                </Button>
-
-                {/* 📞 Call by Phone */}
-                <Button
-                  onClick={() => {
-                    if (item?.phone) {
-                      window.location.href = `tel:${item.phone}`;
-                    } else {
-                      alert("This user didn't provide a phone number.");
-                    }
-                    setOpenDialog(false);
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2"
-                >
-                  📞 Call by Phone
-                </Button>
-
-                {/* Cancel */}
-                <Button
-                  variant="outline"
-                  onClick={() => setOpenDialog(false)}
-                  className="flex items-center justify-center gap-2"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
 
           {/* ---------- CHAT SECTION ---------- */}
           {showChat && (
@@ -260,30 +154,67 @@ export default function ItemDetailPage() {
             </h3>
 
             <div className="space-y-2 text-gray-700">
-              {/* Name */}
+              {/* Finder Name */}
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-500" />
-                <span className="font-medium">{item.name || "Anonymous"}</span>
+                {item.ownerUid ? (
+                  <span
+                    className="font-medium text-blue-600 hover:underline cursor-pointer"
+                    onClick={() => router.push(`/main/profile/${item.ownerUid}`)}
+                  >
+                    {item.name || "Anonymous"}
+                  </span>
+                ) : (
+                  <span className="font-medium">{item.name || "Anonymous"}</span>
+                )}
               </div>
 
               {/* Email */}
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {item.email || "No email"}
-                </span>
+                {item.email ? (
+                  <a
+                    href={`mailto:${item.email}`}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {item.email}
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-600">No email</span>
+                )}
               </div>
 
               {/* Phone */}
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {item.phone || "No phone"}
-                </span>
+                {item.phone ? (
+                  <a
+                    href={`tel:${item.phone}`}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {item.phone}
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-600">No phone</span>
+                )}
               </div>
+
+              {/* Buy Me a Coffee */}
+              {item.status === "found" && item.coffeeLink && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Coffee className="w-4 h-4 text-purple-500" />
+                  <a
+                    href={item.coffeeLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-purple-600 hover:underline"
+                  >
+                    Buy me a coffee
+                  </a>
+                </div>
+              )}
             </div>
           </Card>
-
 
           {/* ---------- SAFETY TIPS ---------- */}
           <Card className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex gap-3 items-start">
@@ -291,19 +222,14 @@ export default function ItemDetailPage() {
             <div>
               <h3 className="font-semibold text-amber-800 mb-1">Safety Tips</h3>
               <p className="text-sm text-amber-700 leading-relaxed">
-                Always meet in a public place when collecting your item. Verify
-                ownership before the exchange. Never share sensitive personal
-                information.
+                Always meet in a public place when collecting your item. Verify ownership before
+                the exchange. Never share sensitive personal information.
               </p>
             </div>
           </Card>
 
           {/* ---------- BACK BUTTON ---------- */}
-          <Button
-            variant="outline"
-            className="w-full mt-2"
-            onClick={() => router.back()}
-          >
+          <Button variant="outline" className="w-full mt-2" onClick={() => router.back()}>
             ← Back to Browse
           </Button>
         </div>

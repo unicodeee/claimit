@@ -52,6 +52,8 @@ export default function ProfilePage() {
   const [filterType, setFilterType] = useState<"lost" | "found" | "all">("all");
   const [editingItem, setEditingItem] = useState<Item | null>(null); // currently editing item
   const [loading, setLoading] = useState(false);
+  const [coffeeLink, setCoffeeLink] = useState<string>("");
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,6 +99,7 @@ export default function ProfilePage() {
           if (data.major) setMajor(data.major);
           if (data.phone) setPhone(data.phone);
           if (data.photoURL) setPhotoURL(data.photoURL);
+          if (data.coffeeLink) setCoffeeLink(data.coffeeLink);
         } else {
           await setDoc(userRef, {
             displayName: user.displayName || "User",
@@ -104,6 +107,7 @@ export default function ProfilePage() {
             major: "",
             phone: "",
             photoURL: "",
+            coffeeLink: "", 
             createdAt: serverTimestamp(),
           });
         }
@@ -229,11 +233,12 @@ export default function ProfilePage() {
 
   // ➕ Add New
   const handleAddNew = () => {
-    const target = filterType === "found" ? "/main/report-found" : "/main/report-lost";
-    const returnTo = "/main/profile";
-    const type = filterType === "found" ? "found" : "lost";
-    router.push(`${target}?type=${type}&returnTo=${encodeURIComponent(returnTo)}`);
-  };
+  const returnTo = "/main/profile";
+  const type = filterType === "found" ? "found" : "lost";
+
+  // navigate to report-lost page with query params
+  router.push(`/main/report-lost?type=${type}&returnTo=${encodeURIComponent(returnTo)}`);
+};
 
   // Save edited item
   const handleSaveEdit = async () => {
@@ -359,7 +364,18 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="text-xl font-semibold mt-4">{userName}</h2>
-            <p className="text-gray-500 text-sm mb-4">Computer Science Student</p>
+            <p className="text-gray-500 text-sm mb-4">Student</p>
+
+            {coffeeLink && (
+            <a
+              href={coffeeLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-purple-600 hover:underline mt-2"
+            >
+              ☕ Buy me a coffee
+            </a>
+          )}
 
             <EditableRow label="Email" value={email} editable={false} />
             <EditableRow
@@ -378,6 +394,16 @@ export default function ProfilePage() {
               onEdit={() => setEditingField("phone")}
               onSave={handleInfoUpdate}
             />
+            <EditableRow
+  label="Buy me a coffee link"
+  field="coffeeLink" 
+  value={coffeeLink}
+  editable
+  isEditing={editingField === "coffeeLink"}
+  onEdit={() => setEditingField("coffeeLink")}
+  onSave={handleInfoUpdate}
+/>
+
           </CardContent>
         </Card>
 
@@ -509,7 +535,7 @@ export default function ProfilePage() {
 }
 
 /* --- Subcomponents --- */
-function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any) {
+function EditableRow({ label, field, value, editable, isEditing, onEdit, onSave }: any) {
   const [temp, setTemp] = useState(value);
   return (
     <div className="w-full bg-gray-50 p-3 rounded-lg mb-3">
@@ -517,7 +543,7 @@ function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any)
       {isEditing ? (
         <div className="flex gap-2 mt-1">
           <Input value={temp} onChange={(e) => setTemp(e.target.value)} className="text-sm" />
-          <Button size="sm" onClick={() => onSave(label.toLowerCase(), temp)}>
+          <Button size="sm" onClick={() => onSave(field || label.toLowerCase(), temp)}>
             Save
           </Button>
         </div>
