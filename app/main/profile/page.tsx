@@ -6,15 +6,6 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { app } from "@lib/firebaseConfig";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -22,10 +13,11 @@ import { onSnapshot, doc, getDoc, query, setDoc, updateDoc, deleteDoc, collectio
 import { getDownloadURL, getStorage, ref, uploadBytes, deleteObject } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
 const db = getFirestore(app);
@@ -57,8 +49,8 @@ export default function ProfilePage() {
   const [photoURL, setPhotoURL] = useState<string>("");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [filterType, setFilterType] = useState<"lost" | "found" | "all">("lost");
-  const [editingItem, setEditingItem] = useState<Item | null>(null); // 🆕 当前编辑的 item
+  const [filterType, setFilterType] = useState<"lost" | "found" | "all">("all");
+  const [editingItem, setEditingItem] = useState<Item | null>(null); // currently editing item
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,8 +125,6 @@ export default function ProfilePage() {
 
   // 🗑 Delete item
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this item?")) return;
-
     try {
       // 1️⃣ Get the Firestore document of this item
       const itemRef = doc(db, "items", id);
@@ -169,10 +159,10 @@ export default function ProfilePage() {
       // 4️⃣ Update UI state to remove the deleted item
       setItems((prev) => prev.filter((i) => i.id !== id));
 
-      alert("✅ Post and related photos deleted successfully!");
+      toast.success("Item and related photos deleted successfully!");
     } catch (err) {
       console.error("❌ Error deleting item:", err);
-      alert("Failed to delete item. Please try again.");
+      toast.error("Failed to delete item. Please try again.");
     }
   };
 
@@ -187,7 +177,7 @@ export default function ProfilePage() {
     });
     if (field === "major") setMajor(newValue);
     if (field === "phone") setPhone(newValue);
-    alert(`${field} updated successfully!`);
+    toast.success(`${field} updated successfully!`);
   };
 
   // 📸 Upload avatar (replace old one if exists)
@@ -226,7 +216,7 @@ export default function ProfilePage() {
       if (user) await updateProfile(user, { photoURL: newURL });
 
       setPhotoURL(newURL);
-      alert("Profile photo updated!");
+      toast.success("Profile photo updated!");
     } catch (error) {
       console.error("Error uploading avatar:", error);
       alert("Failed to update avatar.");
@@ -540,9 +530,30 @@ function ItemCard({ name, desc, type, location, photoURLs, onEdit, onDelete }: a
           {/* Edit/Delete icons (optional) */}
           <div className="flex gap-2 text-gray-400 cursor-pointer">
             <span title="Edit" onClick={onEdit}>✎</span>
-            <span title="Delete" onClick={onDelete}>
-              🗑️
-            </span>
+            <Dialog>
+              <DialogTrigger asChild>
+                <span title="Delete" className="cursor-pointer">🗑️</span>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Delete this item?</DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone. The item and its related photos will be permanently removed.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button variant="destructive" onClick={onDelete}>
+                      Confirm Delete
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
           </div>
         </div>
 
