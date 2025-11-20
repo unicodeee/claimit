@@ -86,15 +86,13 @@ export default function MainDashboard() {
           </p>
           <div className="flex gap-4 mt-6">
             <Button
-              variant="secondary"
-              className="bg-transparent border border-white hover:bg-white hover:text-blue-700"
+              variant="hero"
               onClick={() => router.push("/main/report-lost")}
             >
               Report Lost Item
             </Button>
             <Button
-              variant="secondary"
-              className="bg-transparent border border-white hover:bg-white hover:text-blue-700"
+              variant="hero"
               onClick={() => router.push("/main/browse?type=found")}
             >
               Browse Found Items
@@ -125,8 +123,7 @@ export default function MainDashboard() {
                 Report your lost item and get help from others.
               </p>
               <Button
-                variant="default"
-                className="bg-red-600 hover:bg-red-700 w-full"
+                variant="lost" size ="lg" className="w-full"                
                 onClick={() => router.push("/main/report-lost")}
               >
                 Report Lost
@@ -141,8 +138,7 @@ export default function MainDashboard() {
                 Help others by reporting what you’ve found.
               </p>
               <Button
-                variant="default"
-                className="bg-green-600 hover:bg-green-700 w-full"
+                variant="found" size ="lg" className="w-full"
                 onClick={() => router.push("/main/report-lost?type=found")}
               >
                 Report Found
@@ -157,8 +153,7 @@ export default function MainDashboard() {
                 Search through all lost and found items.
               </p>
               <Button
-                variant="default"
-                className="bg-blue-600 hover:bg-blue-700 w-full"
+                variant="gradient" size ="lg" className="w-full" 
                 onClick={() => router.push("/main/browse?type=all")}
               >
                 Start Browsing
@@ -207,10 +202,8 @@ export default function MainDashboard() {
                   </p>
                   <p className="text-sm text-gray-500">{item.location}</p>
                   <Button
-                    className={`w-full mt-2 text-white ${String(item.status).toLowerCase() === "lost"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-green-600 hover:bg-green-700"
-                      }`}
+                    variant={item.status === "lost" ? "lost" : "found"}
+                    className="w-full mt-2"
                     onClick={() => router.push(`/main/item/${item.id}`)}
                   >
                     {item.status?.toString().toLowerCase() === "lost"

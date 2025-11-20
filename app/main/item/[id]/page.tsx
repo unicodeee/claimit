@@ -76,12 +76,6 @@ export default function ItemDetailPage() {
     setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
   };
 
-  // ---------- Scroll & Email ----------
-  const scrollToChat = () => {
-    setOpenDialog(false);
-    document.getElementById("chat-box")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const sendEmail = () => {
     setOpenDialog(false);
     if (item?.email) window.location.href = `mailto:${item.email}`;
@@ -173,16 +167,13 @@ export default function ItemDetailPage() {
 
           {/* ---------- CONTACT BUTTON ---------- */}
           <Button
-            className={`text-white mb-8 transition-transform duration-150 active:scale-95 ${item.status === "found"
-              ? "bg-green-600 hover:bg-green-700"
-              : "bg-red-500 hover:bg-red-600"
-              }`}
+            variant={item.status === "found" ? "found" : "lost"}
+            className="mb-8 transition-transform duration-150 active:scale-95"
             onClick={() => setOpenDialog(true)}
           >
             💬 {item.status === "found" ? "Contact Finder" : "Contact Owner"}
           </Button>
 
-          {/* ---------- DIALOG ---------- */}
           {/* ---------- DIALOG ---------- */}
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogContent className="max-w-sm">
@@ -206,7 +197,8 @@ export default function ItemDetailPage() {
                       document.getElementById("chat-box")?.scrollIntoView({ behavior: "smooth" });
                     }, 200);
                   }}
-                  className="bg-blue-600 text-white flex items-center justify-center gap-2"
+                  variant="gradient"
+                  className="flex items-center justify-center gap-2"
                 >
                   💬 Chat in App
                 </Button>
@@ -230,7 +222,7 @@ export default function ItemDetailPage() {
                     }
                     setOpenDialog(false);
                   }}
-                  variant="secondary"
+                  variant="outline"
                   className="flex items-center justify-center gap-2"
                 >
                   📞 Call by Phone
@@ -238,7 +230,7 @@ export default function ItemDetailPage() {
 
                 {/* Cancel */}
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setOpenDialog(false)}
                   className="flex items-center justify-center gap-2"
                 >

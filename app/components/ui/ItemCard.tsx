@@ -36,21 +36,23 @@ export function ItemCard({
             <CardHeader className="flex justify-between items-center">
                 <CardTitle className="text-lg">{title}</CardTitle>
                 {type?.toLowerCase() === "lost" ? (
-                    <Badge variant="destructive">{type.toUpperCase()}</Badge>
+                    <Badge className="bg-red-500 text-white">{type.toUpperCase()}</Badge>
                 ) : (
-                    <Badge variant="default">{type?.toUpperCase()}</Badge>
+                    <Badge className="bg-green-500 text-white">{type?.toUpperCase()}</Badge>
                 )}
             </CardHeader>
 
             {/* ---------- Content ---------- */}
             <CardContent className="flex flex-col justify-between gap-4">
                 <AspectRatio ratio={4 / 3}>
+                  <div className="bg-gray-100 flex items-center justify-center rounded-xl overflow-hidden">
                     <Image
                         src={imgUrl ?? "/no-img.png"}
                         alt="Item image"
                         fill
-                        className="object-contain rounded-xl shadow-2xl"
+                        className="object-contain"
                     />
+                  </div>
                 </AspectRatio>
 
                 {/* keywords */}

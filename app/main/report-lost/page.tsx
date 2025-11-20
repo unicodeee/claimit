@@ -156,8 +156,9 @@ function ReportLostContent() {
                     >
                         <Button
                             onClick={() => setIsFound((prev) => !prev)}
-                            className={`text-2xl text-white px-6 py-3 transition-colors duration-500 ${isFound ? "bg-blue-600 hover:bg-blue-700" : "bg-red-500 hover:bg-red-600"
-                                }`}
+                            variant={isFound ? "found" : "lost"}
+                            size="lg"
+                            className="text-2xl px-6 py-3 transition-colors duration-500"
                         >
                             <AnimatePresence mode="wait">
                                 {isFound ? (
@@ -267,8 +268,8 @@ function ReportLostContent() {
                             )}
                         />
 
-                        {/* Date / Time / Location */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Date / Time / Location (row 1) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                             {/* Date */}
                             <FormField
                                 control={form.control}
@@ -278,10 +279,7 @@ function ReportLostContent() {
                                         <FormLabel>{isFound ? "Date Found" : "Date Lost"}</FormLabel>
                                         <Popover open={openDate} onOpenChange={setOpenDate}>
                                             <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="justify-between w-full font-normal"
-                                                >
+                                                <Button variant="outline" className="justify-between w-full font-normal">
                                                     {field.value
                                                         ? field.value.toLocaleDateString("en-US", {
                                                             day: "2-digit",
@@ -317,35 +315,29 @@ function ReportLostContent() {
                                     <FormItem>
                                         <FormLabel>{isFound ? "Time Found" : "Time Lost"}</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                type="time"
-                                                step="1"
-                                                {...field}
-                                                className="bg-background"
-                                            />
+                                            <Input type="time" step="1" {...field} className="bg-background" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
 
-                            {/* ---------- Location (Fancy Map version) ---------- */}
+                            {/* Location Selector */}
                             <FormField
                                 control={form.control}
                                 name="location"
                                 render={({ field }) => {
-                                    // coordinates for map preview
                                     const LOCATIONS: Record<string, { lng: number; lat: number }> = {
                                         Campus: { lng: -121.8807, lat: 37.3352 },
                                         Library: { lng: -121.8821, lat: 37.3357 },
                                         Cafeteria: { lng: -121.881, lat: 37.3349 },
                                         Gym: { lng: -121.8795, lat: 37.3365 },
                                     };
-
                                     const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+                                    const selected = field.value && LOCATIONS[field.value];
 
                                     return (
-                                        <FormItem>
+                                        <FormItem className="flex flex-col">
                                             <FormLabel>Location</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
@@ -361,140 +353,156 @@ function ReportLostContent() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-
-                                            {/* Map Preview with marker, animation & night theme */}
-                                            <AnimatePresence mode="wait">
-                                                {field.value && LOCATIONS[field.value] && (
-                                                    <motion.div
-                                                        key={field.value}
-                                                        initial={{ opacity: 0, scale: 0.95 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.4 }}
-                                                        className="mt-4"
-                                                    >
-                                                        <img
-                                                            src={`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/pin-s+ff0000(${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat})/${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat},16,0/400x250?access_token=${MAPBOX_TOKEN}`}
-                                                            alt="Map preview"
-                                                            className="rounded-lg shadow-md border cursor-pointer hover:opacity-90 transition"
-                                                            onClick={() =>
-                                                                window.open(
-                                                                    `https://www.google.com/maps?q=${LOCATIONS[field.value].lat},${LOCATIONS[field.value].lng}`,
-                                                                    "_blank"
-                                                                )
-                                                            }
-                                                        />
-                                                        <p className="text-xs text-gray-400 mt-1 italic">
-                                                            Click the map to view on Google Maps
-                                                        </p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
                                             <FormMessage />
                                         </FormItem>
                                     );
                                 }}
                             />
                         </div>
-                        {/* Photos */}
+
+                        {/* Map preview (row 2, independent from the grid) */}
                         <FormField
                             control={form.control}
-                            name="photos"
+                            name="location"
+                            render={({ field }) => {
+                                const LOCATIONS: Record<string, { lng: number; lat: number }> = {
+                                    Campus: { lng: -121.8807, lat: 37.3352 },
+                                    Library: { lng: -121.8821, lat: 37.3357 },
+                                    Cafeteria: { lng: -121.881, lat: 37.3349 },
+                                    Gym: { lng: -121.8795, lat: 37.3365 },
+                                };
+                                const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+                                const selected = field.value && LOCATIONS[field.value];
+
+                                return (
+                                    <AnimatePresence mode="wait">
+                                        {selected && (
+                                            <motion.div
+                                                key={field.value}
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 8 }}
+                                                transition={{ duration: 0.25 }}
+                                                className="mt-4 flex justify-center"
+                                            >
+                                                <img
+                                                    src={`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/pin-s+ff0000(${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat})/${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat},16,0/500x300?access_token=${MAPBOX_TOKEN}`}
+                                                    alt="Map preview"
+                                                    className="rounded-lg shadow-md border cursor-pointer hover:opacity-90 transition"
+                                                    onClick={() =>
+                                                        window.open(
+                                                            `https://www.google.com/maps?q=${LOCATIONS[field.value].lat},${LOCATIONS[field.value].lng}`,
+                                                            "_blank"
+                                                        )
+                                                    }
+                                                />
+                                                <p className="text-xs text-gray-400 mt-1 text-center italic">
+                                                    Click the map to view on Google Maps
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                );
+                            }}
+                        />
+                    {/* Photos */}
+                    <FormField
+                        control={form.control}
+                        name="photos"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Photos</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => field.onChange(e.target.files)}
+                                    />
+                                </FormControl>
+                                <FormDescription>
+                                    Upload clear, high-quality images of your item.
+                                </FormDescription>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* Contact Info */}
+                    <h3 className="text-lg font-semibold mb-4 mt-6">
+                        Contact Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Photos</FormLabel>
+                                    <FormLabel>Full Name</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={(e) => field.onChange(e.target.files)}
-                                        />
+                                        <Input placeholder="John Doe" {...field} />
                                     </FormControl>
-                                    <FormDescription>
-                                        Upload clear, high-quality images of your item.
-                                    </FormDescription>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
-
-                        {/* Contact Info */}
-                        <h3 className="text-lg font-semibold mb-4 mt-6">
-                            Contact Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="your.email@sjsu.edu" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone (optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="(555) 123-4567" {...field} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            disabled={loading}
-                            className={`w-full text-white mt-4 transition-colors duration-500 ${isFound
-                                ? "bg-blue-600 hover:bg-blue-700"
-                                : "bg-red-500 hover:bg-red-600"
-                                }`}
-                        >
-                            {loading
-                                ? "Uploading..."
-                                : isFound
-                                    ? "Report Found Item"
-                                    : "Report Lost Item"}
-                        </Button>
-                    </form>
-                </Form>
-
-                {/* ---------- Tips Sidebar ---------- */}
-                <aside className="w-full md:w-80">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
-                        <ul className="space-y-3 text-sm text-gray-600">
-                            <li>Be specific in your description.</li>
-                            <li>Include unique identifiers or marks.</li>
-                            <li>Upload clear, well-lit photos.</li>
-                            <li>Provide accurate location and date.</li>
-                            <li>Check back regularly for matches.</li>
-                        </ul>
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="your.email@sjsu.edu" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone (optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="(555) 123-4567" {...field} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                     </div>
-                </aside>
-            </main>
-        </div>
+
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className={`w-full text-white mt-4 transition-colors duration-500 ${isFound
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "bg-red-500 hover:bg-red-600"
+                            }`}
+                    >
+                        {loading
+                            ? "Uploading..."
+                            : isFound
+                                ? "Report Found Item"
+                                : "Report Lost Item"}
+                    </Button>
+                </form>
+            </Form>
+
+            {/* ---------- Tips Sidebar ---------- */}
+            <aside className="w-full md:w-80">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
+                    <ul className="space-y-3 text-sm text-gray-600">
+                        <li>Be specific in your description.</li>
+                        <li>Include unique identifiers or marks.</li>
+                        <li>Upload clear, well-lit photos.</li>
+                        <li>Provide accurate location and date.</li>
+                        <li>Check back regularly for matches.</li>
+                    </ul>
+                </div>
+            </aside>
+        </main>
+        </div >
     );
 }
