@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { app } from "@lib/firebaseConfig";
 import { Button } from "@/components/ui/button";
+
 import {
   Form,
   FormControl,
