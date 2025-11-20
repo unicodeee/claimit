@@ -22,10 +22,11 @@ import { onSnapshot, doc, getDoc, query, setDoc, updateDoc, deleteDoc, collectio
 import { getDownloadURL, getStorage, ref, uploadBytes, deleteObject } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
 const db = getFirestore(app);
@@ -133,8 +134,6 @@ export default function ProfilePage() {
 
   // 🗑 Delete item
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this item?")) return;
-
     try {
       // 1️⃣ Get the Firestore document of this item
       const itemRef = doc(db, "items", id);
@@ -169,10 +168,10 @@ export default function ProfilePage() {
       // 4️⃣ Update UI state to remove the deleted item
       setItems((prev) => prev.filter((i) => i.id !== id));
 
-      alert("✅ Post and related photos deleted successfully!");
+      toast.success("Item and related photos deleted successfully!");
     } catch (err) {
       console.error("❌ Error deleting item:", err);
-      alert("Failed to delete item. Please try again.");
+      toast.error("Failed to delete item. Please try again.");
     }
   };
 
@@ -226,7 +225,7 @@ export default function ProfilePage() {
       if (user) await updateProfile(user, { photoURL: newURL });
 
       setPhotoURL(newURL);
-      alert("Profile photo updated!");
+      toast.success("Profile photo updated!");
     } catch (error) {
       console.error("Error uploading avatar:", error);
       alert("Failed to update avatar.");
@@ -540,9 +539,30 @@ function ItemCard({ name, desc, type, location, photoURLs, onEdit, onDelete }: a
           {/* Edit/Delete icons (optional) */}
           <div className="flex gap-2 text-gray-400 cursor-pointer">
             <span title="Edit" onClick={onEdit}>✎</span>
-            <span title="Delete" onClick={onDelete}>
-              🗑️
-            </span>
+            <Dialog>
+              <DialogTrigger asChild>
+                <span title="Delete" className="cursor-pointer">🗑️</span>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Delete this item?</DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone. The item and its related photos will be permanently removed.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button variant="destructive" onClick={onDelete}>
+                      Confirm Delete
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
           </div>
         </div>
 
