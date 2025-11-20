@@ -6,15 +6,6 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { app } from "@lib/firebaseConfig";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -58,8 +49,8 @@ export default function ProfilePage() {
   const [photoURL, setPhotoURL] = useState<string>("");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [filterType, setFilterType] = useState<"lost" | "found" | "all">("lost");
-  const [editingItem, setEditingItem] = useState<Item | null>(null); // 🆕 当前编辑的 item
+  const [filterType, setFilterType] = useState<"lost" | "found" | "all">("all");
+  const [editingItem, setEditingItem] = useState<Item | null>(null); // currently editing item
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,7 +177,7 @@ export default function ProfilePage() {
     });
     if (field === "major") setMajor(newValue);
     if (field === "phone") setPhone(newValue);
-    alert(`${field} updated successfully!`);
+    toast.success(`${field} updated successfully!`);
   };
 
   // 📸 Upload avatar (replace old one if exists)
