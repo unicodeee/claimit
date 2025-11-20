@@ -52,6 +52,8 @@ export default function ProfilePage() {
   const [filterType, setFilterType] = useState<"lost" | "found" | "all">("all");
   const [editingItem, setEditingItem] = useState<Item | null>(null); // currently editing item
   const [loading, setLoading] = useState(false);
+  const [coffeeLink, setCoffeeLink] = useState<string>("");
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,7 +80,7 @@ export default function ProfilePage() {
         { merge: true }
       );
       setUserName(values.username);
-      alert("Username updated!");
+      toast.success("Username updated!");
     }
   }
 
@@ -97,6 +99,7 @@ export default function ProfilePage() {
           if (data.major) setMajor(data.major);
           if (data.phone) setPhone(data.phone);
           if (data.photoURL) setPhotoURL(data.photoURL);
+          if (data.coffeeLink) setCoffeeLink(data.coffeeLink);
         } else {
           await setDoc(userRef, {
             displayName: user.displayName || "User",
@@ -104,6 +107,7 @@ export default function ProfilePage() {
             major: "",
             phone: "",
             photoURL: "",
+            coffeeLink: "", 
             createdAt: serverTimestamp(),
           });
         }
@@ -178,6 +182,7 @@ export default function ProfilePage() {
     if (field === "major") setMajor(newValue);
     if (field === "phone") setPhone(newValue);
     toast.success(`${field} updated successfully!`);
+
   };
 
   // 📸 Upload avatar (replace old one if exists)
@@ -219,7 +224,7 @@ export default function ProfilePage() {
       toast.success("Profile photo updated!");
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      alert("Failed to update avatar.");
+      toast.success("Failed to update avatar.");
     } finally {
       setLoading(false);
     }
@@ -228,11 +233,12 @@ export default function ProfilePage() {
 
   // ➕ Add New
   const handleAddNew = () => {
-    const target = filterType === "found" ? "/main/report-found" : "/main/report-lost";
-    const returnTo = "/main/profile";
-    const type = filterType === "found" ? "found" : "lost";
-    router.push(`${target}?type=${type}&returnTo=${encodeURIComponent(returnTo)}`);
-  };
+  const returnTo = "/main/profile";
+  const type = filterType === "found" ? "found" : "lost";
+
+  // navigate to report-lost page with query params
+  router.push(`/main/report-lost?type=${type}&returnTo=${encodeURIComponent(returnTo)}`);
+};
 
   // Save edited item
   const handleSaveEdit = async () => {
@@ -247,11 +253,11 @@ export default function ProfilePage() {
         category: editingItem.category || "",
         updatedAt: serverTimestamp(),
       });
-      alert("Item updated!");
+      toast.success("Item updated!");
       setEditingItem(null);
     } catch (e) {
       console.error(e);
-      alert("Failed to update item");
+      toast.success("Failed to update item");
     } finally {
       setLoading(false);
     }
@@ -263,7 +269,7 @@ export default function ProfilePage() {
 
     // limit to 4 photos
     if ((editingItem.photoURLs?.length || 0) >= 4) {
-      alert("You can only upload up to 4 photos per item.");
+      toast.success("You can only upload up to 4 photos per item.");
       e.target.value = ""; // clear the input
       return;
     }
@@ -285,14 +291,43 @@ export default function ProfilePage() {
 
       // asynchronously update local state, immdiately show new photo in UI
       setEditingItem({ ...editingItem, photoURLs: updatedPhotos });
-      alert("Photo uploaded successfully!");
+      toast.success("Photo uploaded successfully!");
     } catch (error) {
       console.error(error);
-      alert("Failed to upload photo");
+      toast.success("Failed to upload photo");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDeletePhoto = async (url: string) => {
+    if (!editingItem) return;
+    try {
+      setLoading(true);
+
+      // 1️⃣ delete from Firebase Storage
+      const path = decodeURIComponent(url.split("/o/")[1].split("?")[0]);
+      await deleteObject(ref(storage, path));
+
+      // 2️⃣ update Photos array in Firestore
+      const updatedPhotos = (editingItem.photoURLs || []).filter((p) => p !== url);
+      await updateDoc(doc(db, "items", editingItem.id), {
+        photoURLs: updatedPhotos,
+        updatedAt: serverTimestamp(),
+      });
+
+      // 3️⃣ Async update local state
+      setEditingItem({ ...editingItem, photoURLs: updatedPhotos });
+
+      toast.success("Photo deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting photo:", error);
+      toast.error("Failed to delete photo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   const avatarSrc =
@@ -329,7 +364,18 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="text-xl font-semibold mt-4">{userName}</h2>
-            <p className="text-gray-500 text-sm mb-4">Computer Science Student</p>
+            <p className="text-gray-500 text-sm mb-4">Student</p>
+
+            {coffeeLink && (
+            <a
+              href={coffeeLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-purple-600 hover:underline mt-2"
+            >
+              ☕ Buy me a coffee
+            </a>
+          )}
 
             <EditableRow label="Email" value={email} editable={false} />
             <EditableRow
@@ -348,6 +394,16 @@ export default function ProfilePage() {
               onEdit={() => setEditingField("phone")}
               onSave={handleInfoUpdate}
             />
+            <EditableRow
+  label="Buy me a coffee link"
+  field="coffeeLink" 
+  value={coffeeLink}
+  editable
+  isEditing={editingField === "coffeeLink"}
+  onEdit={() => setEditingField("coffeeLink")}
+  onSave={handleInfoUpdate}
+/>
+
           </CardContent>
         </Card>
 
@@ -425,17 +481,26 @@ export default function ProfilePage() {
               <div>
                 <Label className="text-sm text-gray-600">Add or Replace Photos</Label>
                 <Input type="file" accept="image/*" onChange={handleImageUpdate} />
-                {/* photo preview */}
-                <div className="flex gap-2 mt-2 overflow-x-auto">
+                {/* preview + Delete */}
+                <div className="flex gap-2 mt-3 overflow-x-auto">
                   {(editingItem.photoURLs || []).map((url, idx) => (
-                    <Image
-                      key={idx}
-                      src={url}
-                      alt={`photo-${idx}`}
-                      width={80}
-                      height={80}
-                      className="rounded-md border border-gray-200 object-cover"
-                    />
+                    <div key={idx} className="relative group">
+                      <Image
+                        src={url}
+                        alt={`photo-${idx}`}
+                        width={80}
+                        height={80}
+                        className="rounded-md border border-gray-200 object-cover"
+                      />
+                      {/* delete photo when hover on the pics */}
+                      <button
+                        onClick={() => handleDeletePhoto(url)}
+                        className="absolute -top-1 -right-1 z-10 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        title="Remove photo"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -470,7 +535,7 @@ export default function ProfilePage() {
 }
 
 /* --- Subcomponents --- */
-function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any) {
+function EditableRow({ label, field, value, editable, isEditing, onEdit, onSave }: any) {
   const [temp, setTemp] = useState(value);
   return (
     <div className="w-full bg-gray-50 p-3 rounded-lg mb-3">
@@ -478,7 +543,7 @@ function EditableRow({ label, value, editable, isEditing, onEdit, onSave }: any)
       {isEditing ? (
         <div className="flex gap-2 mt-1">
           <Input value={temp} onChange={(e) => setTemp(e.target.value)} className="text-sm" />
-          <Button size="sm" onClick={() => onSave(label.toLowerCase(), temp)}>
+          <Button size="sm" onClick={() => onSave(field || label.toLowerCase(), temp)}>
             Save
           </Button>
         </div>

@@ -68,7 +68,7 @@ export default function MainLayout({
                         onClick={() => router.push("/main/profile")}
                     >
                         <Image
-                            src={photoURL!}
+                            src={photoURL || "https://api.dicebear.com/9.x/avataaars/png?seed=default"}
                             alt="Profile photo"
                             width={32}
                             height={32}

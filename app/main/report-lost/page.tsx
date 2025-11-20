@@ -14,6 +14,8 @@ import {
     where,
     getDocs,
     limit,
+    doc,
+    getDoc,
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { app } from "@lib/firebaseConfig";
@@ -103,7 +105,7 @@ const formSchema = z
         itemName: z.string().min(2, "Item name must be at least 2 characters."),
         category: z.string().min(1, "Please select a category."),
         description: z.string().min(10, "Please provide a detailed description."),
-        dateLost: z.date().refine((val) => val instanceof Date && !isNaN(val.getTime()), {message: "Please pick a valid date.",}), timeLost: z.string().optional(),
+        dateLost: z.date().refine((val) => val instanceof Date && !isNaN(val.getTime()), { message: "Please pick a valid date.", }), timeLost: z.string().optional(),
         location: z.string().min(2, "Please select a location."),
         name: z.string().min(2, "Please enter your full name."),
         email: z.string().email("Invalid email address."),
@@ -216,6 +218,14 @@ function ReportLostContent() {
             const { photos, dateLost, ...cleanData } = values;
             const timestampDate = Timestamp.fromDate(combinedWhen);
 
+            // let's also get user's coffee link from their profile
+            let userCoffeeLink = "";
+            const userRef = doc(db, "users", uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                userCoffeeLink = userSnap.data().coffeeLink || "";
+            }
+
             await addDoc(collection(db, "items"), {
                 ...cleanData,
                 [isFound ? "dateFound" : "dateLost"]: timestampDate,
@@ -223,6 +233,7 @@ function ReportLostContent() {
                 type: isFound,
                 status: isFound ? "found" : "lost",
                 photoURLs,
+                coffeeLink: userCoffeeLink,
                 createdAt: Timestamp.now(),
             });
 
