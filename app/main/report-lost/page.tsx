@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { addDoc, collection, getFirestore, Timestamp } from "firebase/firestore";
+import {
+    addDoc,
+    collection,
+    getFirestore,
+    Timestamp,
+    query,
+    where,
+    getDocs,
+    limit,
+} from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { app } from "@lib/firebaseConfig";
 import { useAuth } from "@/lib/auth-context";
@@ -35,22 +44,85 @@ import { CalendarIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
+/* -------------------------- Utility: Date & Time -------------------------- */
+
+// Check if two dates fall on the same day
+function isSameDay(a?: Date, b?: Date) {
+    if (!a || !b) return false;
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+}
+
+// Merge a date and a time string (HH:mm or HH:mm:ss) into a Date object
+function combineDateAndTime(date?: Date, time?: string): Date {
+    const base = date ? new Date(date) : new Date();
+    const [hh = "00", mm = "00"] = (time || "00:00").split(":");
+    base.setHours(Number(hh), Number(mm), 0, 0);
+    return base;
+}
+
+// Format the current time for <input type="time">, minute precision
+function timeNowForInput(): string {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+/* -------------------------- Utility: Daily Post Limit -------------------------- */
+
+// Return start of today (00:00)
+function startOfTodayDate(): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+// Count how many items a user has posted today
+async function getTodayPostCount(db: ReturnType<typeof getFirestore>, uid: string) {
+    const todayStart = Timestamp.fromDate(startOfTodayDate());
+    const qCount = query(
+        collection(db, "items"),
+        where("ownerUid", "==", uid),
+        where("createdAt", ">=", todayStart),
+        limit(10)
+    );
+    const snap = await getDocs(qCount);
+    return snap.size;
+}
 
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-const formSchema = z.object({
-    itemName: z.string().min(2, "Item name must be at least 2 characters."),
-    category: z.string().min(1, "Please select a category."),
-    description: z.string().min(10, "Please provide a detailed description."),
-    dateLost: z.date("Please pick a date."),
-    timeLost: z.string().optional(),
-    location: z.string().min(2, "Please enter a valid location."),
-    name: z.string().min(2, "Please enter your full name."),
-    email: z.email("Invalid email address."),
-    phone: z.string().optional(),
-    photos: z.any().optional(),
-});
+/* -------------------------- Form Schema -------------------------- */
+
+const formSchema = z
+    .object({
+        itemName: z.string().min(2, "Item name must be at least 2 characters."),
+        category: z.string().min(1, "Please select a category."),
+        description: z.string().min(10, "Please provide a detailed description."),
+        dateLost: z.date().refine((val) => val instanceof Date && !isNaN(val.getTime()), {message: "Please pick a valid date.",}), timeLost: z.string().optional(),
+        location: z.string().min(2, "Please select a location."),
+        name: z.string().min(2, "Please enter your full name."),
+        email: z.string().email("Invalid email address."),
+        phone: z.string().optional(),
+        photos: z.any().optional(),
+    })
+    .superRefine((data, ctx) => {
+        // Prevent choosing a future date/time
+        const combined = combineDateAndTime(data.dateLost, data.timeLost);
+        if (combined.getTime() > Date.now()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["timeLost"],
+                message: "Date/Time cannot be in the future.",
+            });
+        }
+    });
+
+/* -------------------------- Page -------------------------- */
 
 export default function ReportLostPage() {
     return (
@@ -60,19 +132,21 @@ export default function ReportLostPage() {
     );
 }
 
+/* -------------------------- Component -------------------------- */
+
 function ReportLostContent() {
     const router = useRouter();
     const params = useSearchParams();
     const returnTo = params.get("returnTo") || "/main/profile";
-
     const { uid } = useAuth();
+
     const [loading, setLoading] = useState(false);
     const [openDate, setOpenDate] = useState(false);
-
-    // initialize isFound based on URL param
-    const pickedType = params.get("type"); // "lost" | "found" | null
+    const pickedType = params.get("type");
     const [isFound, setIsFound] = useState(pickedType === "found");
 
+    // store "current time" only on client to avoid hydration mismatch
+    const [nowForTimeInput, setNowForTimeInput] = useState<string | undefined>(undefined);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -85,21 +159,51 @@ function ReportLostContent() {
             email: "",
             phone: "",
             dateLost: new Date(),
-            timeLost: new Date().toTimeString().slice(0, 5),
+            timeLost: "", // set after mount
         },
     });
 
-    // 🧩 Handle submit
+    // Set current time after hydration (client only)
+    useEffect(() => {
+        const t = timeNowForInput();
+        setNowForTimeInput(t);
+        if (!form.getValues("timeLost")) {
+            form.setValue("timeLost", t, { shouldValidate: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /* -------------------------- Submit -------------------------- */
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        if (!uid) return alert("Please in first.");
+        if (!uid) return alert("Please sign in first.");
         setLoading(true);
+
         try {
+            // (1) Daily post limit
+            const postedToday = await getTodayPostCount(db, uid);
+            if (postedToday >= 10) {
+                toast.error("You've reached the daily limit (10 posts per day).");
+                setLoading(false);
+                return;
+            }
+
+            // (2) Future time validation
+            const combinedWhen = combineDateAndTime(values.dateLost, values.timeLost);
+            if (combinedWhen.getTime() > Date.now()) {
+                toast.error("Date/Time cannot be in the future.");
+                setLoading(false);
+                return;
+            }
+
+            // (3) Photo upload (max 4)
             const fileList = values.photos as FileList | null;
             const photoURLs: string[] = [];
-
-            // Upload photos concurrently
             if (fileList?.length) {
-                const uploadPromises = Array.from(fileList).map(async (file) => {
+                const filesToUpload = Array.from(fileList).slice(0, 4);
+                if (fileList.length > 4) {
+                    toast("Only the first 4 photos will be uploaded.", { icon: "ℹ️" });
+                }
+                const uploadPromises = filesToUpload.map(async (file) => {
                     const storageRef = ref(storage, `items/${uid}/${Date.now()}-${file.name}`);
                     await uploadBytes(storageRef, file);
                     return getDownloadURL(storageRef);
@@ -108,27 +212,23 @@ function ReportLostContent() {
                 photoURLs.push(...urls);
             }
 
+            // (4) Save to Firestore
             const { photos, dateLost, ...cleanData } = values;
-            const timestampDate = Timestamp.fromDate(dateLost);
+            const timestampDate = Timestamp.fromDate(combinedWhen);
 
             await addDoc(collection(db, "items"), {
                 ...cleanData,
                 [isFound ? "dateFound" : "dateLost"]: timestampDate,
                 ownerUid: uid,
-                type: isFound, // true=found, false=lost
+                type: isFound,
                 status: isFound ? "found" : "lost",
                 photoURLs,
                 createdAt: Timestamp.now(),
             });
 
             toast.success("🎉 Item submitted successfully!", {
-                style: {
-                    borderRadius: "10px",
-                    background: "#f0fdf4",
-                    color: "#065f46",
-                },
+                style: { borderRadius: "10px", background: "#f0fdf4", color: "#065f46" },
             });
-
 
             router.push(returnTo);
         } catch (e) {
@@ -139,21 +239,27 @@ function ReportLostContent() {
         }
     };
 
+    /* -------------------------- UI -------------------------- */
+
+    const LOCATIONS: Record<string, { lng: number; lat: number }> = {
+        Campus: { lng: -121.8807, lat: 37.3352 },
+        Library: { lng: -121.8821, lat: 37.3357 },
+        Cafeteria: { lng: -121.881, lat: 37.3349 },
+        Gym: { lng: -121.8795, lat: 37.3365 },
+    };
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* ---------- Page Header ---------- */}
+            {/* ---------- Header ---------- */}
             <section className="px-10 py-10 text-center space-y-3">
                 <h2 className="text-2xl font-semibold mb-2">
                     Help reunite lost items with their owners or find what you’ve lost
                 </h2>
 
-                {/* 🔘 Toggle button with animation */}
+                {/* Toggle Lost/Found */}
                 <div className="flex justify-center">
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    >
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                             onClick={() => setIsFound((prev) => !prev)}
                             variant={isFound ? "found" : "lost"}
@@ -167,7 +273,6 @@ function ReportLostContent() {
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: 10 }}
-                                        transition={{ duration: 0.25 }}
                                     >
                                         YOU FOUND THIS ITEM 😊
                                     </motion.span>
@@ -177,7 +282,6 @@ function ReportLostContent() {
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: 10 }}
-                                        transition={{ duration: 0.25 }}
                                     >
                                         LOOKING FOR THIS ITEM 😥
                                     </motion.span>
@@ -201,10 +305,6 @@ function ReportLostContent() {
                         onSubmit={form.handleSubmit(onSubmit)}
                         className="flex-1 bg-white p-8 rounded-xl shadow-sm space-y-8"
                     >
-                        <h3 className="text-lg font-semibold mb-4">
-                            {isFound ? "Found Item Details" : "Lost Item Details"}
-                        </h3>
-
                         {/* Item Name */}
                         <FormField
                             control={form.control}
@@ -254,21 +354,15 @@ function ReportLostContent() {
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea
-                                            placeholder="Describe your item..."
-                                            rows={4}
-                                            {...field}
-                                        />
+                                        <Textarea placeholder="Describe your item..." rows={4} {...field} />
                                     </FormControl>
-                                    <FormDescription>
-                                        Include any identifying marks or details.
-                                    </FormDescription>
+                                    <FormDescription>Include any identifying marks or details.</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        {/* Date / Time / Location (row 1) */}
+                        {/* Date / Time / Location */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                             {/* Date */}
                             <FormField
@@ -298,6 +392,7 @@ function ReportLostContent() {
                                                         field.onChange(date);
                                                         setOpenDate(false);
                                                     }}
+                                                    disabled={{ after: new Date() }}
                                                     captionLayout="dropdown"
                                                 />
                                             </PopoverContent>
@@ -315,65 +410,57 @@ function ReportLostContent() {
                                     <FormItem>
                                         <FormLabel>{isFound ? "Time Found" : "Time Lost"}</FormLabel>
                                         <FormControl>
-                                            <Input type="time" step="1" {...field} className="bg-background" />
+                                            <Input
+                                                type="time"
+                                                step="60" // minute precision
+                                                suppressHydrationWarning
+                                                max={
+                                                    isSameDay(form.getValues("dateLost"), new Date())
+                                                        ? nowForTimeInput
+                                                        : undefined
+                                                }
+                                                {...field}
+                                                className="bg-background"
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
 
-                            {/* Location Selector */}
+                            {/* Location */}
                             <FormField
                                 control={form.control}
                                 name="location"
-                                render={({ field }) => {
-                                    const LOCATIONS: Record<string, { lng: number; lat: number }> = {
-                                        Campus: { lng: -121.8807, lat: 37.3352 },
-                                        Library: { lng: -121.8821, lat: 37.3357 },
-                                        Cafeteria: { lng: -121.881, lat: 37.3349 },
-                                        Gym: { lng: -121.8795, lat: 37.3365 },
-                                    };
-                                    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-                                    const selected = field.value && LOCATIONS[field.value];
-
-                                    return (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Location</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select Location" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {Object.keys(LOCATIONS).map((key) => (
-                                                        <SelectItem key={key} value={key}>
-                                                            📍 {key}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    );
-                                }}
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Location</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select Location" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {Object.keys(LOCATIONS).map((key) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        📍 {key}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
                         </div>
 
-                        {/* Map preview (row 2, independent from the grid) */}
+                        {/* Map Preview */}
                         <FormField
                             control={form.control}
                             name="location"
                             render={({ field }) => {
-                                const LOCATIONS: Record<string, { lng: number; lat: number }> = {
-                                    Campus: { lng: -121.8807, lat: 37.3352 },
-                                    Library: { lng: -121.8821, lat: 37.3357 },
-                                    Cafeteria: { lng: -121.881, lat: 37.3349 },
-                                    Gym: { lng: -121.8795, lat: 37.3365 },
-                                };
-                                const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
                                 const selected = field.value && LOCATIONS[field.value];
-
                                 return (
                                     <AnimatePresence mode="wait">
                                         {selected && (
@@ -383,21 +470,21 @@ function ReportLostContent() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 8 }}
                                                 transition={{ duration: 0.25 }}
-                                                className="mt-4 flex justify-center"
+                                                className="mt-4 flex flex-col items-center"
                                             >
                                                 <img
-                                                    src={`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/pin-s+ff0000(${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat})/${LOCATIONS[field.value].lng},${LOCATIONS[field.value].lat},16,0/500x300?access_token=${MAPBOX_TOKEN}`}
+                                                    src={`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/pin-s+ff0000(${selected.lng},${selected.lat})/${selected.lng},${selected.lat},16,0/500x300?access_token=${MAPBOX_TOKEN}`}
                                                     alt="Map preview"
                                                     className="rounded-lg shadow-md border cursor-pointer hover:opacity-90 transition"
                                                     onClick={() =>
                                                         window.open(
-                                                            `https://www.google.com/maps?q=${LOCATIONS[field.value].lat},${LOCATIONS[field.value].lng}`,
+                                                            `https://www.google.com/maps?q=${selected.lat},${selected.lng}`,
                                                             "_blank"
                                                         )
                                                     }
                                                 />
                                                 <p className="text-xs text-gray-400 mt-1 text-center italic">
-                                                    Click the map to view on Google Maps
+                                                    Click map to open Google Maps
                                                 </p>
                                             </motion.div>
                                         )}
@@ -405,104 +492,91 @@ function ReportLostContent() {
                                 );
                             }}
                         />
-                    {/* Photos */}
-                    <FormField
-                        control={form.control}
-                        name="photos"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Photos</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={(e) => field.onChange(e.target.files)}
-                                    />
-                                </FormControl>
-                                <FormDescription>
-                                    Upload clear, high-quality images of your item.
-                                </FormDescription>
-                            </FormItem>
-                        )}
-                    />
 
-                    {/* Contact Info */}
-                    <h3 className="text-lg font-semibold mb-4 mt-6">
-                        Contact Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Photos */}
                         <FormField
                             control={form.control}
-                            name="name"
+                            name="photos"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Full Name</FormLabel>
+                                    <FormLabel>Photos</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="John Doe" {...field} />
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => {
+                                                const files = e.target.files;
+                                                if (files && files.length > 4) {
+                                                    toast.error("You can upload up to 4 photos.");
+                                                }
+                                                field.onChange(files);
+                                            }}
+                                        />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormDescription>Upload clear, well-lit images (up to 4 photos).</FormDescription>
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="your.email@sjsu.edu" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Phone (optional)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="(555) 123-4567" {...field} />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
 
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        className={`w-full text-white mt-4 transition-colors duration-500 ${isFound
-                            ? "bg-blue-600 hover:bg-blue-700"
-                            : "bg-red-500 hover:bg-red-600"
-                            }`}
-                    >
-                        {loading
-                            ? "Uploading..."
-                            : isFound
-                                ? "Report Found Item"
-                                : "Report Lost Item"}
-                    </Button>
-                </form>
-            </Form>
+                        {/* Contact Info */}
+                        <h3 className="text-lg font-semibold mb-4 mt-6">Contact Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="your.email@sjsu.edu" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone (optional)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="(555) 123-4567" {...field} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-            {/* ---------- Tips Sidebar ---------- */}
-            <aside className="w-full md:w-80">
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h3 className="font-semibold mb-4">💡 Tips for Better Results</h3>
-                    <ul className="space-y-3 text-sm text-gray-600">
-                        <li>Be specific in your description.</li>
-                        <li>Include unique identifiers or marks.</li>
-                        <li>Upload clear, well-lit photos.</li>
-                        <li>Provide accurate location and date.</li>
-                        <li>Check back regularly for matches.</li>
-                    </ul>
-                </div>
-            </aside>
-        </main>
-        </div >
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full text-white mt-4 transition-colors duration-500 ${isFound ? "bg-blue-600 hover:bg-blue-700" : "bg-red-500 hover:bg-red-600"
+                                }`}
+                        >
+                            {loading
+                                ? "Uploading..."
+                                : isFound
+                                    ? "Report Found Item"
+                                    : "Report Lost Item"}
+                        </Button>
+                    </form>
+                </Form>
+            </main>
+        </div>
     );
 }

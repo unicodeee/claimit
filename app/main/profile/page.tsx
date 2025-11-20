@@ -6,7 +6,6 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { app } from "@lib/firebaseConfig";
 import { Button } from "@/components/ui/button";
-
 import {
   Form,
   FormControl,
@@ -20,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { onSnapshot, doc, getDoc, query, setDoc, updateDoc, deleteDoc, collection, where, serverTimestamp } from "firebase/firestore";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { getDownloadURL, getStorage, ref, uploadBytes, deleteObject } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -134,9 +133,46 @@ export default function ProfilePage() {
 
   // 🗑 Delete item
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this item?")) {
-      await deleteDoc(doc(db, "items", id));
+    if (!confirm("Delete this item?")) return;
+
+    try {
+      // 1️⃣ Get the Firestore document of this item
+      const itemRef = doc(db, "items", id);
+      const itemSnap = await getDoc(itemRef);
+
+      if (itemSnap.exists()) {
+        const data = itemSnap.data();
+
+        // 2️⃣ If there are photos, delete each one from Firebase Storage
+        if (data.photoURLs && Array.isArray(data.photoURLs)) {
+          for (const fullURL of data.photoURLs) {
+            try {
+              // Extract the file path from the full download URL
+              // For example:
+              // "https://firebasestorage.googleapis.com/v0/b/.../o/items%2FX1wavED18JdTX4IINRmA9OY4iz2%2Fphoto.jpg?alt=media&token=..."
+              const path = decodeURIComponent(fullURL.split("/o/")[1].split("?")[0]);
+
+              // Get a reference to the file in Storage and delete it
+              const fileRef = ref(storage, path);
+              await deleteObject(fileRef);
+              console.log(`✅ Deleted photo: ${path}`);
+            } catch (err) {
+              console.warn(`⚠️ Failed to delete photo ${fullURL}:`, err);
+            }
+          }
+        }
+      }
+
+      // 3️⃣ Delete the Firestore document itself
+      await deleteDoc(itemRef);
+
+      // 4️⃣ Update UI state to remove the deleted item
       setItems((prev) => prev.filter((i) => i.id !== id));
+
+      alert("✅ Post and related photos deleted successfully!");
+    } catch (err) {
+      console.error("❌ Error deleting item:", err);
+      alert("Failed to delete item. Please try again.");
     }
   };
 
@@ -154,22 +190,51 @@ export default function ProfilePage() {
     alert(`${field} updated successfully!`);
   };
 
-  // 📸 Upload avatar
+  // 📸 Upload avatar (replace old one if exists)
   const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uid) return;
-    const storageRef = ref(storage, `avatars/${uid}-${Date.now()}`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    await updateDoc(doc(db, "users", uid), {
-      photoURL: url,
-      updatedAt: serverTimestamp(),
-    });
-    const user = auth.currentUser;
-    if (user) await updateProfile(user, { photoURL: url });
-    setPhotoURL(url);
-    alert("Profile photo updated!");
+
+    setLoading(true);
+    try {
+      // delete old avatar if exists
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const oldURL = userDoc.data().photoURL;
+        if (oldURL) {
+          try {
+            const oldRef = ref(storage, oldURL);
+            await deleteObject(oldRef);
+            console.log("Old avatar deleted successfully.");
+          } catch (err) {
+            console.warn("Old avatar deletion skipped or failed:", err);
+          }
+        }
+      }
+
+      // upload new avatar
+      const newRef = ref(storage, `avatars/${uid}-${Date.now()}`);
+      await uploadBytes(newRef, file);
+      const newURL = await getDownloadURL(newRef);
+
+      // update Firestore + Auth profile
+      await updateDoc(doc(db, "users", uid), {
+        photoURL: newURL,
+        updatedAt: serverTimestamp(),
+      });
+      const user = auth.currentUser;
+      if (user) await updateProfile(user, { photoURL: newURL });
+
+      setPhotoURL(newURL);
+      alert("Profile photo updated!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("Failed to update avatar.");
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   // ➕ Add New
   const handleAddNew = () => {
@@ -205,6 +270,14 @@ export default function ProfilePage() {
   // 📸 Update item photo (inside edit dialog)
   const handleImageUpdate = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editingItem || !uid) return;
+
+    // limit to 4 photos
+    if ((editingItem.photoURLs?.length || 0) >= 4) {
+      alert("You can only upload up to 4 photos per item.");
+      e.target.value = ""; // clear the input
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
     try {
