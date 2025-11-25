@@ -364,8 +364,6 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="text-xl font-semibold mt-4">{userName}</h2>
-            <p className="text-gray-500 text-sm mb-4">Student</p>
-
             {coffeeLink && (
             <a
               href={coffeeLink}
