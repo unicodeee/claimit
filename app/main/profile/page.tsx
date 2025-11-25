@@ -443,6 +443,7 @@ export default function ProfilePage() {
                     photoURLs={item.photoURLs}
                     onEdit={() => setEditingItem(item)}  // when edit icon clicked
                     onDelete={() => handleDelete(item.id)}
+                    onClick={() => router.push(`/main/item/${item.id}`)}
                   />
                 ))
             ) : (
@@ -565,69 +566,82 @@ function EditableRow({ label, field, value, editable, isEditing, onEdit, onSave 
 }
 
 // Each item card showing image + text details
-function ItemCard({ name, desc, type, location, photoURLs, onEdit, onDelete }: any) {
+function ItemCard({ name, desc, type, location, photoURLs, onClick, onEdit, onDelete }: any) {
   return (
-    <Card className="p-0 shadow-sm border border-gray-200 overflow-hidden rounded-xl">
-      {/* ---------- IMAGE SECTION ---------- */}
-      <div className="relative w-full bg-gray-100">
-        {/* Using a fixed aspect ratio for consistent layout */}
-        <div className="relative w-full aspect-[4/3]">
-          <Image
-            src={photoURLs?.[0] ?? "/no-img.png"} // first image or placeholder
-            alt={name}
-            fill
-            className="object-contain bg-gray-100"
-          />
+      <Card
+          className="p-0 shadow-sm border border-gray-200 overflow-hidden rounded-xl cursor-pointer"
+      >
+        <div className="relative w-full bg-gray-100">
+          <div className="relative w-full aspect-[4/3]">
+            <Image
+                src={photoURLs?.[0] ?? "/no-img.png"}
+                alt={name}
+                fill
+                className="object-contain bg-gray-100"
+                onClick={onClick}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* ---------- TEXT SECTION ---------- */}
-      <div className="p-4">
-        {/* Header with LOST / FOUND tag + icons */}
-        <div className="flex justify-between items-start">
+        <div className="p-4">
+          <div className="flex justify-between items-start">
           <span
-            className={`px-2 py-1 text-xs font-semibold rounded ${type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              className={`px-2 py-1 text-xs font-semibold rounded ${
+                  type ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
               }`}
           >
             {type ? "FOUND" : "LOST"}
           </span>
 
-          {/* Edit/Delete icons (optional) */}
-          <div className="flex gap-2 text-gray-400 cursor-pointer">
-            <span title="Edit" onClick={onEdit}>✎</span>
-            <Dialog>
-              <DialogTrigger asChild>
-                <span title="Delete" className="cursor-pointer">🗑️</span>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm">
-                <DialogHeader>
-                  <DialogTitle>Delete this item?</DialogTitle>
-                  <DialogDescription>
-                    This action cannot be undone. The item and its related photos will be permanently removed.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                    <Button variant="destructive" onClick={onDelete}>
-                      Confirm Delete
-                    </Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2 text-gray-400 cursor-pointer">
+            <span
+                title="Edit"
+                onClick={(e) => {
+                  e.stopPropagation(); // IMPORTANT
+                  onEdit();
+                }}
+            >
+              ✎
+            </span>
 
+              <Dialog>
+                <DialogTrigger asChild>
+                <span
+                    title="Delete"
+                    className="cursor-pointer"
+                    onClick={(e) => e.stopPropagation()} // IMPORTANT
+                >
+                  🗑️
+                </span>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>Delete this item?</DialogTitle>
+                    <DialogDescription>
+                      This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button variant="destructive" onClick={onDelete}>
+                        Confirm Delete
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+            </div>
           </div>
-        </div>
 
-        {/* ---------- ITEM DETAILS ---------- */}
-        <h3 className="font-semibold mt-2 text-gray-900 truncate">{name}</h3>
-        <p className="text-sm text-gray-600 line-clamp-2">{desc}</p>
-        <p className="text-xs text-gray-500 mt-1">📍 {location}</p>
-      </div>
-    </Card>
+          <h3 className="font-semibold mt-2 text-gray-900 truncate">{name}</h3>
+          <p className="text-sm text-gray-600 line-clamp-2">{desc}</p>
+          <p className="text-xs text-gray-500 mt-1">📍 {location}</p>
+        </div>
+      </Card>
   );
 }
 
