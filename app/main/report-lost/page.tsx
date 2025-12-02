@@ -576,7 +576,7 @@ function ReportLostContent() {
                         <Button
                             type="submit"
                             disabled={loading}
-                            className={`w-full text-white mt-4 transition-colors duration-500 ${isFound ? "bg-blue-600 hover:bg-blue-700" : "bg-red-500 hover:bg-red-600"
+                            className={`w-full text-white mt-4 transition-colors duration-500 ${isFound ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"
                                 }`}
                         >
                             {loading
