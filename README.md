@@ -30,7 +30,7 @@ Claimit helps Spartans reconnect with their lost belongings by making it easy to
 Clone the repository:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/unicodeee/claimit.git
 cd claimit
 npm install
 ```
